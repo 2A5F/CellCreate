@@ -1,0 +1,18 @@
+﻿{
+  "profiles": {
+    "Debug": {
+      "commandName": "Executable",
+      "executablePath": "$(MSBuildProjectDirectory)/../build/debug/bin/cc.exe",
+      "workingDirectory": "$(MSBuildProjectDirectory)/../build/debug/bin",
+      "commandLineArgs": "-D",
+      "nativeDebugging": true
+    },
+    "Release": {
+      "commandName": "Executable",
+      "executablePath": "$(MSBuildProjectDirectory)/../build/release/bin/cc.exe",
+      "workingDirectory": "$(MSBuildProjectDirectory)/../build/release/bin",
+      "commandLineArgs": "-D",
+      "nativeDebugging": true
+    }
+  }
+}

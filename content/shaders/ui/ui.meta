@@ -1,0 +1,7 @@
+id: e6426d39-1926-4e51-8a0d-89607a3d51b8
+type: shader
+
+pass:
+  rect:
+    vs: vert_rect
+    ps: pixe_rect

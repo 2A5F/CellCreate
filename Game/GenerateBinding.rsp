@@ -1,0 +1,19 @@
+﻿--config
+preview-codegen
+single-file
+generate-aggressive-inlining
+exclude-funcs-with-body
+--remap
+cc::b8=B8
+cc::b32=B32
+--define-macro CO_Generating_FFI=1
+--file
+../native/ffi/FFI.h
+--libraryPath
+cc.exe
+--methodClassName
+FFI
+--namespace
+Game.Native
+--output
+./Native/FFI.cs

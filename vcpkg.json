@@ -1,0 +1,31 @@
+{
+  "dependencies" : [ {
+    "name" : "fmt",
+    "version>=" : "11.0.2"
+  }, {
+    "name" : "spdlog",
+    "version>=" : "1.14.1",
+    "features" : [ "wchar" ]
+  }, {
+    "name" : "stduuid",
+    "version>=" : "1.2.3"
+  }, {
+    "name" : "directx12-agility",
+    "version>=" : "1.614.1"
+  }, {
+    "name" : "directx-headers",
+    "version>=" : "1.614.1"
+  }, {
+    "name" : "directxtk12",
+    "version>=" : "2024-09-04"
+  }, {
+    "name" : "cppwinrt",
+    "version>=" : "2.0.240405.15"
+  }, {
+    "name" : "directx-dxc",
+    "version>=" : "2024-07-31"
+  }, {
+    "name" : "glm",
+    "version>=" : "1.0.1#3"
+  }]
+}
