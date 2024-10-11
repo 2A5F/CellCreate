@@ -6,6 +6,7 @@ namespace
 {
     AppVars s_app_vars{};
     AppFnVtb s_app_fn_vtb{};
+    Rc<FApp> s_app{};
 }
 
 AppVars& cc::args()
@@ -16,4 +17,9 @@ AppVars& cc::args()
 AppFnVtb& cc::vtb()
 {
     return s_app_fn_vtb;
+}
+
+Rc<FApp>& cc::app()
+{
+    return s_app;
 }

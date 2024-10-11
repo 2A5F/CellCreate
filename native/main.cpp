@@ -85,13 +85,17 @@ int main()
             winrt::init_apartment();
             if (!SDL_Init(SDL_INIT_VIDEO)) throw cc::SdlError();
 
+            cc::app() = new cc::App();
+
             cc::InitParams init_params{
-                .p_vas = &cc::args()
+                .p_vas = &cc::args(),
+                .p_native_app = cc::app().get(),
             };
             cc::InitResult init_result{
-                .fn_vtb = &cc::vtb()
+                .fn_vtb = &cc::vtb(),
             };
             load_dotnet(&init_params, &init_result);
+
             cc::vtb().main();
 
             SDL_Quit();

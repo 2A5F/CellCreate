@@ -7,6 +7,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <NoWarn>CS8500</NoWarn>
         <OutDir Condition=" '$(Configuration)' == 'Debug' ">../build/debug/bin/managed</OutDir>
         <OutDir Condition=" '$(Configuration)' == 'Release' ">../build/release/bin/managed</OutDir>
     </PropertyGroup>
@@ -16,6 +17,11 @@
         <PackageReference Include="Coplt.Mathematics" Version="0.3.0"/>
         <PackageReference Include="Coplt.RAII" Version="0.1.0"/>
         <PackageReference Include="Coplt.ShaderReflections" Version="0.1.0"/>
+        <PackageReference Include="Fody" Version="6.8.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="InlineIL.Fody" Version="1.9.0" PrivateAssets="all"/>
         <PackageReference Include="Serilog" Version="4.0.1"/>
         <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0"/>
         <PackageReference Include="Serilog.Exceptions" Version="8.4.0"/>
@@ -24,7 +30,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="SharpZipLib" Version="1.4.2"/>
-        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -32,8 +38,9 @@
         <FFI Include="GenerateBinding.rsp"/>
     </ItemGroup>
 
-    <Target Name="FFI" BeforeTargets="PrepareForBuild" Inputs="@(FFI)" Outputs="Native/FFI.cs">
-        <Exec Command="ClangSharpPInvokeGenerator @GenerateBinding.rsp"/>
+    <!-- Inputs="@(FFI)" Outputs="Native/FFI.cs" -->
+    <Target Name="FFI" BeforeTargets="PrepareForBuild">
+        <Exec Command="ClangSharpPInvokeGenerator -std=c++23 @GenerateBinding.rsp"/>
     </Target>
-    
+
 </Project>

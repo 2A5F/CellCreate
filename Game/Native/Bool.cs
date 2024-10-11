@@ -9,6 +9,8 @@ public readonly record struct B8(sbyte value)
 
     public static implicit operator bool(B8 v) => v.value != 0;
     public static implicit operator B8(bool v) => new(v ? (sbyte)1 : (sbyte)0);
+    public static implicit operator B8(sbyte v) => new(v);
+    public static implicit operator B8(byte v) => new((sbyte)v);
 
     public override string ToString() => this ? "true" : "false";
 }
@@ -20,6 +22,8 @@ public readonly record struct B32(int value)
 
     public static implicit operator bool(B32 v) => v.value != 0;
     public static implicit operator B32(bool v) => new(v ? 1 : 0);
+    public static implicit operator B32(int v) => new(v);
+    public static implicit operator B32(uint v) => new((int)v);
 
     public override string ToString() => this ? "true" : "false";
 }

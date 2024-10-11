@@ -57,6 +57,7 @@ add_definitions(-DGLM_FORCE_LEFT_HANDED)
 add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE)
 add_definitions(-DGLM_FORCE_UNRESTRICTED_GENTYPE)
 add_definitions(-DGLM_FORCE_QUAT_DATA_XYZW)
+add_definitions(-DCO_SRC)
 
 add_executable(${PROJECT_NAME} native/main.cpp
         native/utils/console_utils.h
@@ -68,7 +69,11 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/defines.h
         native/types.h
         native/App.cc
-        native/App.h)
+        native/App.h
+        native/Object.h
+        native/ffi/Window.h
+        native/window/Window.cc
+        native/window/Window.h)
 
 if (WIN32)
     target_link_options(${PROJECT_NAME} PRIVATE "/SUBSYSTEM:WINDOWS")

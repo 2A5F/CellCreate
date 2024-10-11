@@ -6,6 +6,8 @@
 #include <SDL3/SDL.h>
 #include <fmt/core.h>
 
+#include "../ffi/FFI.h"
+
 namespace cc
 {
     struct CcError final : std::runtime_error
@@ -30,6 +32,11 @@ namespace cc
 
         explicit SdlError() : SdlError(SDL_GetError())
         {
+        }
+
+        static FError FFI()
+        {
+            return {FErrorType::Sdl, FErrorMsgType::CStr, {.c_str = SDL_GetError()}};
         }
     };
 

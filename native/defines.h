@@ -23,3 +23,7 @@
 #else
     #define CO_CDECL
 #endif
+
+#ifdef CO_SRC
+#define RT_IID_PPV_ARGS(comtptr) __uuidof(comtptr), comtptr.put_void()
+#endif
