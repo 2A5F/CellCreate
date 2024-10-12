@@ -178,12 +178,17 @@ namespace cc
         };
 
         #if CO_SRC
-        static constexpr FError None()
+        constexpr bool IsNone() const noexcept
+        {
+            return type == FErrorType::None;
+        }
+
+        static constexpr FError None() noexcept
         {
             return {FErrorType::None};
         }
 
-        static constexpr FError Common(const FrStr16 msg)
+        static constexpr FError Common(const FrStr16 msg) noexcept
         {
             return {FErrorType::Common, FErrorMsgType::Str16, {.str16 = msg}};
         }

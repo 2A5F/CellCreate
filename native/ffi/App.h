@@ -2,6 +2,7 @@
 
 #include "./FFI.h"
 #include "./Window.h"
+#include "Rendering.h"
 
 namespace cc
 {
@@ -26,11 +27,11 @@ namespace cc
         virtual FError Init() noexcept = 0;
         virtual FError Exit() noexcept = 0;
 
-
-        virtual FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept = 0;
-
         virtual FMessageVtb* MsgVtb() noexcept = 0;
         virtual FError MsgPump() noexcept = 0;
         virtual FError SendMsg(FMessage type, void* data) noexcept = 0;
+
+        virtual FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept = 0;
+        virtual FError CreateRendering(FRendering*& out) noexcept = 0;
     };
 }

@@ -55,10 +55,10 @@ namespace cc
         FError Exit() noexcept override;
 
         FMessageVtb* MsgVtb() noexcept override;
+        FError MsgPump() noexcept override;
+        FError SendMsg(FMessage type, void* data) noexcept override;
 
         FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept override;
-        FError MsgPump() noexcept override;
-
-        FError SendMsg(FMessage type, void* data) noexcept override;
+        FError CreateRendering(FRendering*& out) noexcept override;
     };
 }

@@ -296,18 +296,10 @@ namespace Game.Native
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NativeTypeName("cc::FError")]
-        public FError CreateWindowHandle([NativeTypeName("cc::FWindowCreateOptions &")] FWindowCreateOptions* options, [NativeTypeName("FWindowHandle *&")] FWindowHandle** @out)
-        {
-            FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FWindowCreateOptions*, FWindowHandle**, FError*>)(lpVtbl[11]))((FApp*)Unsafe.AsPointer(ref this), &result, options, @out);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FMessageVtb *")]
         public FMessageVtb* MsgVtb()
         {
-            return ((delegate* unmanaged[Thiscall]<FApp*, FMessageVtb*>)(lpVtbl[12]))((FApp*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FApp*, FMessageVtb*>)(lpVtbl[11]))((FApp*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -315,7 +307,7 @@ namespace Game.Native
         public FError MsgPump()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[13]))((FApp*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[12]))((FApp*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -323,7 +315,23 @@ namespace Game.Native
         public FError SendMsg([NativeTypeName("cc::FMessage")] FMessage type, void* data)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FMessage, void*, FError*>)(lpVtbl[14]))((FApp*)Unsafe.AsPointer(ref this), &result, type, data);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FMessage, void*, FError*>)(lpVtbl[13]))((FApp*)Unsafe.AsPointer(ref this), &result, type, data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CreateWindowHandle([NativeTypeName("cc::FWindowCreateOptions &")] FWindowCreateOptions* options, [NativeTypeName("FWindowHandle *&")] FWindowHandle** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FWindowCreateOptions*, FWindowHandle**, FError*>)(lpVtbl[14]))((FApp*)Unsafe.AsPointer(ref this), &result, options, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CreateRendering([NativeTypeName("FRendering *&")] FRendering** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[15]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
     }
 
@@ -493,17 +501,25 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
+        public FError Hwnd([NativeTypeName("void *&")] void** hwnd)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, void**, FError*>)(lpVtbl[10]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, hwnd);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
         public FError SetTitle([NativeTypeName("const char *")] byte* title)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, byte*, FError*>)(lpVtbl[10]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, title);
+            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, byte*, FError*>)(lpVtbl[11]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, title);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("const char *")]
         public byte* Title()
         {
-            return ((delegate* unmanaged[Thiscall]<FWindowHandle*, byte*>)(lpVtbl[11]))((FWindowHandle*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FWindowHandle*, byte*>)(lpVtbl[12]))((FWindowHandle*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -511,7 +527,7 @@ namespace Game.Native
         public FError Size([NativeTypeName("cc::uint2 &")] uint2* @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, uint2*, FError*>)(lpVtbl[12]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, uint2*, FError*>)(lpVtbl[13]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -519,7 +535,7 @@ namespace Game.Native
         public FError PixelSize([NativeTypeName("cc::uint2 &")] uint2* @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, uint2*, FError*>)(lpVtbl[13]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, uint2*, FError*>)(lpVtbl[14]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -527,7 +543,7 @@ namespace Game.Native
         public FError Show()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, FError*>)(lpVtbl[14]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, FError*>)(lpVtbl[15]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -535,7 +551,130 @@ namespace Game.Native
         public FError Hide()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, FError*>)(lpVtbl[15]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FWindowHandle*, FError*, FError*>)(lpVtbl[16]))((FWindowHandle*)Unsafe.AsPointer(ref this), &result);
+        }
+    }
+
+    public partial struct FGpuConsts
+    {
+
+        [NativeTypeName("const uint32_t")]
+        public const uint FrameCount = 3;
+    }
+
+    [NativeTypeName("struct FRendering : cc::IObject, cc::FGpuConsts")]
+    public unsafe partial struct FRendering
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "84cb940f-f9e2-4154-b330-5833e593bc94";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FRendering*, void>)(lpVtbl[0]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, nuint>)(lpVtbl[1]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, nuint>)(lpVtbl[2]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, nuint>)(lpVtbl[3]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, nuint>)(lpVtbl[4]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, B8>)(lpVtbl[5]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, B8>)(lpVtbl[6]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, void*>)(lpVtbl[7]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, Guid, void*>)(lpVtbl[8]))((FRendering*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError Init([NativeTypeName("cc::FWindowHandle *")] FWindowHandle* window_handle)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FWindowHandle*, FError*>)(lpVtbl[9]))((FRendering*)Unsafe.AsPointer(ref this), &result, window_handle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError OnResize([NativeTypeName("cc::uint2")] uint2 size)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, uint2, FError*>)(lpVtbl[10]))((FRendering*)Unsafe.AsPointer(ref this), &result, size);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 VSync()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRendering*, B8>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError SetVSync([NativeTypeName("cc::b8")] B8 enable)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, B8, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, enable);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError ReadyFrame()
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError EndFrame()
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
     }
 }

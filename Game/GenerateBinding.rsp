@@ -29,6 +29,7 @@ cc::uuid=Guid
 ../native/ffi/FFI.h
 ../native/ffi/App.h
 ../native/ffi/Window.h
+../native/ffi/Rendering.h
 --libraryPath
 cc.exe
 --methodClassName

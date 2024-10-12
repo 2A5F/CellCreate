@@ -23,7 +23,7 @@ extern "C" {
     __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
 }
 
-int err_back(auto f)
+int err_back(auto f) noexcept
 {
     int r;
     try

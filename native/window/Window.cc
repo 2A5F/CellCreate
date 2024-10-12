@@ -63,6 +63,14 @@ void* WindowHandle::hwnd() const
     return SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
 }
 
+FError WindowHandle::Hwnd(void*& hwnd) noexcept
+{
+    const auto props = SDL_GetWindowProperties(m_window);
+    if (props == 0) return SdlError::FFI();
+    hwnd = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+    return FError::None();
+}
+
 FError WindowHandle::SetTitle(const char* title) noexcept
 {
     if (!SDL_SetWindowTitle(m_window, title)) return SdlError::FFI();

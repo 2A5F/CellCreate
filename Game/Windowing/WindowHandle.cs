@@ -28,8 +28,8 @@ internal unsafe partial class WindowHandle
     [Drop]
     private void Drop()
     {
-        if (ExchangeUtils.ExchangePtr(ref m_ptr, null, out var inner) is null) return;
-        inner->Release();
+        if (ExchangeUtils.ExchangePtr(ref m_ptr, null, out var ptr) is null) return;
+        ptr->Release();
     }
 
     public string GetTitle() => Title = Marshal.PtrToStringUTF8((IntPtr)m_ptr->Title())!;

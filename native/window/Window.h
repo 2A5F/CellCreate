@@ -25,6 +25,7 @@ namespace cc
         [[nodiscard]] SDL_Window* sdl_window() const;
 
         void* hwnd() const;
+        FError Hwnd(void*& hwnd) noexcept override;
 
         FError SetTitle(const char* title) noexcept override;
         const char* Title() noexcept override;

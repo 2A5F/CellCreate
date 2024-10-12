@@ -26,6 +26,8 @@ namespace cc
         IMPL_INTERFACE("16ae5438-28d8-4c7e-b1b0-e420478cce6e", IObject)
         virtual FError Id(FWindowId& out) noexcept = 0;
 
+        virtual FError Hwnd(void*& hwnd) noexcept = 0;
+
         virtual FError SetTitle(const char* title) noexcept = 0;
         virtual const char* Title() noexcept = 0;
 

@@ -60,6 +60,8 @@ add_definitions(-DGLM_FORCE_QUAT_DATA_XYZW)
 add_definitions(-DCO_SRC)
 
 add_executable(${PROJECT_NAME} native/main.cpp
+        third_party/D3D12MemoryAllocator/include/D3D12MemAlloc.h
+        third_party/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp
         native/utils/console_utils.h
         native/utils/console_utils.cc
         native/utils/error.h
@@ -74,7 +76,11 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/ffi/Window.h
         native/window/Window.cc
         native/window/Window.h
-        native/ffi/App.h)
+        native/ffi/App.h
+        native/ffi/Rendering.h
+        native/rendering/Rendering.cc
+        native/rendering/Rendering.h
+)
 
 if (WIN32)
     target_link_options(${PROJECT_NAME} PRIVATE "/SUBSYSTEM:WINDOWS")
@@ -100,6 +106,7 @@ find_package(stduuid CONFIG REQUIRED)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PACKAGE_PREFIX_DIR}/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${PACKAGE_PREFIX_DIR}/lib)
+target_include_directories(${PROJECT_NAME} PRIVATE third_party/D3D12MemoryAllocator/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native)
 target_link_directories(${PROJECT_NAME} PRIVATE ${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native)
 target_link_libraries(${PROJECT_NAME} PRIVATE mimalloc)

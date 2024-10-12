@@ -1,5 +1,6 @@
 #include "App.h"
 
+#include "rendering/Rendering.h"
 #include "utils/error.h"
 #include "window/Window.h"
 
@@ -58,6 +59,11 @@ FError App::SendMsg(FMessage type, void* data) noexcept
 FError App::CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept
 {
     return WindowHandle::Create(options, out);
+}
+
+FError App::CreateRendering(FRendering*& out) noexcept
+{
+    return Rendering::Create(out);
 }
 
 FError App::MsgPump() noexcept
