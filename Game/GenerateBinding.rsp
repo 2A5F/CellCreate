@@ -3,6 +3,8 @@ preview-codegen
 single-file
 generate-aggressive-inlining
 --remap
+char=byte
+wchar_t=char
 cc::Char8=byte
 cc::Char16=char
 cc::b8=B8
@@ -25,6 +27,7 @@ cc::quaternion=quaternion
 cc::uuid=Guid
 --file
 ../native/ffi/FFI.h
+../native/ffi/App.h
 ../native/ffi/Window.h
 --libraryPath
 cc.exe

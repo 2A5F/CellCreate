@@ -83,8 +83,6 @@ int main()
         []
         {
             winrt::init_apartment();
-            if (!SDL_Init(SDL_INIT_VIDEO)) throw cc::SdlError();
-
             cc::app() = new cc::App();
 
             cc::InitParams init_params{
@@ -96,10 +94,7 @@ int main()
             };
             load_dotnet(&init_params, &init_result);
 
-            cc::vtb().main();
-
-            SDL_Quit();
-            return 0;
+            return cc::vtb().main();
         }
     );
 }

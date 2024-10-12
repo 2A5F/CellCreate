@@ -73,7 +73,8 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/Object.h
         native/ffi/Window.h
         native/window/Window.cc
-        native/window/Window.h)
+        native/window/Window.h
+        native/ffi/App.h)
 
 if (WIN32)
     target_link_options(${PROJECT_NAME} PRIVATE "/SUBSYSTEM:WINDOWS")

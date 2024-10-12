@@ -11,7 +11,7 @@ public partial struct FError
 
     public unsafe string GetString() => msg_type switch
     {
-        FErrorMsgType.CStr => Marshal.PtrToStringAuto((IntPtr)c_str)!,
+        FErrorMsgType.CStr => Marshal.PtrToStringUTF8((IntPtr)c_str)!,
         FErrorMsgType.Str8 => str8.ToString(),
         FErrorMsgType.Str16 => str16.ToString(),
         _ => "There is no error"

@@ -1,16 +1,32 @@
-﻿using Game.Native;
+﻿using System.Collections.Concurrent;
+using Game.Native;
+using Game.Windowing;
 
 namespace Game;
 
-public static unsafe class App
+public static class App
 {
-    internal static AppVars* s_appVars;
-    internal static FApp* s_native_app;
+    internal static unsafe AppVars* s_appVars;
+    internal static unsafe FApp* s_native_app;
 
-    public static ref AppVars Vars => ref *s_appVars;
+    public static unsafe ref AppVars Vars => ref *s_appVars;
 
-    internal static void Main()
+    public static Window Window { get; private set; } = null!;
+
+    internal static unsafe int Main()
     {
-        Console.WriteLine($"From c#, {sizeof(TestStruct)}");
+        s_native_app->Init();
+        MessageLoop.InitMessageLoop();
+        new Thread(MainLoop) { Name = "Main Loop" }.Start();
+        MessageLoop.Loop();
+        s_native_app->Exit();
+        return 0;
+    }
+
+    internal static async void MainLoop()
+    {
+        Window = await Window.Create(new("CC", 1280, 720) { MinSize = new(640, 360), Resizable = true, });
+        Window.MarkMain();
+        while (Vars.running) { }
     }
 }

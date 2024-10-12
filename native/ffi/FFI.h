@@ -7,6 +7,7 @@
 namespace cc
 {
     using FFI_Action = void CO_CDECL();
+    using FFI_Func___i32 = i32 CO_CDECL();
 
     #ifdef CO_SRC
     using Char8 = char8_t;
@@ -16,55 +17,13 @@ namespace cc
     using Char16 = uint16_t;
     #endif
 
-    class FrStr8
-    {
-        const Char8* m_data;
-        const size_t m_size;
-
-    public:
-        explicit FrStr8(const Char8* data, const size_t size): m_data(data), m_size(size)
-        {
-        }
-
-        const Char8* data() const
-        {
-            return m_data;
-        }
-
-        size_t size() const
-        {
-            return m_size;
-        }
-    };
-
-    class FrStr16
-    {
-        const Char16* m_data;
-        const size_t m_size;
-
-    public:
-        explicit FrStr16(const Char16* data, const size_t size): m_data(data), m_size(size)
-        {
-        }
-
-        const Char16* data() const
-        {
-            return m_data;
-        }
-
-        size_t size() const
-        {
-            return m_size;
-        }
-    };
-
     class FmStr8
     {
-        Char8* m_data;
+        Char8* const m_data;
         const size_t m_size;
 
     public:
-        explicit FmStr8(Char8* data, const size_t size): m_data(data), m_size(size)
+        explicit constexpr FmStr8(Char8* data, const size_t size): m_data(data), m_size(size)
         {
         }
 
@@ -81,11 +40,11 @@ namespace cc
 
     class FmStr16
     {
-        Char16* m_data;
+        Char16* const m_data;
         const size_t m_size;
 
     public:
-        explicit FmStr16(Char16* data, const size_t size): m_data(data), m_size(size)
+        explicit constexpr FmStr16(Char16* data, const size_t size): m_data(data), m_size(size)
         {
         }
 
@@ -99,6 +58,98 @@ namespace cc
             return m_size;
         }
     };
+
+    class FrStr8
+    {
+        const Char8* const m_data;
+        const size_t m_size;
+
+    public:
+        explicit constexpr FrStr8(const Char8* data, const size_t size): m_data(data), m_size(size)
+        {
+        }
+
+        FrStr8(FmStr8 m) : m_data(m.data()), m_size(m.size()) // NOLINT(*-explicit-constructor)
+        {
+        }
+
+        #if CO_SRC
+        FrStr8& operator=(const FmStr8 m)
+        {
+            new(this)FrStr8(m);
+            return *this;
+        }
+        #endif
+
+        const Char8* data() const
+        {
+            return m_data;
+        }
+
+        size_t size() const
+        {
+            return m_size;
+        }
+    };
+
+    class FrStr16
+    {
+        const Char16* const m_data;
+        const size_t m_size;
+
+    public:
+        explicit constexpr FrStr16(const Char16* data, const size_t size): m_data(data), m_size(size)
+        {
+        }
+
+        FrStr16(FmStr16 m) : m_data(m.data()), m_size(m.size()) // NOLINT(*-explicit-constructor)
+        {
+        }
+
+        #if CO_SRC
+        FrStr16& operator=(const FmStr16 m)
+        {
+            new(this)FrStr16(m);
+            return *this;
+        }
+        #endif
+
+        const Char16* data() const
+        {
+            return m_data;
+        }
+
+        size_t size() const
+        {
+            return m_size;
+        }
+    };
+
+    #if CO_SRC
+    template <size_t N>
+    constexpr FrStr8 str8(const char8_t (&msg)[N])
+    {
+        return FrStr8(msg, N);
+    }
+
+    template <size_t N>
+    constexpr FrStr16 str16(const char16_t (&msg)[N])
+    {
+        return FrStr16(msg, N);
+    }
+
+    template <size_t N>
+    constexpr FmStr8 str8(char8_t (&msg)[N])
+    {
+        return FmStr8(msg, N);
+    }
+
+    template <size_t N>
+    constexpr FmStr16 str16(char16_t (&msg)[N])
+    {
+        return FmStr16(msg, N);
+    }
+    #endif
 
     enum class FErrorType
     {
@@ -131,6 +182,11 @@ namespace cc
         {
             return {FErrorType::None};
         }
+
+        static constexpr FError Common(const FrStr16 msg)
+        {
+            return {FErrorType::Common, FErrorMsgType::Str16, {.str16 = msg}};
+        }
         #endif
     };
 
@@ -146,25 +202,31 @@ namespace cc
 
     struct FApp;
 
+    using FFI_Action__FLogLevel__ccharp = void CO_CDECL(FLogLevel, const char*);
+    using FFI_Action__FLogLevel__cwcharp = void CO_CDECL(FLogLevel, const wchar_t*);
+    using FFI_Action__FLogLevel__FrStr8 = void CO_CDECL(FLogLevel, FrStr8);
+    using FFI_Action__FLogLevel__FrStr16 = void CO_CDECL(FLogLevel, FrStr16);
+
     struct AppFnVtb
     {
-        FFI_Action* main;
+        FFI_Func___i32* main;
+
+        FFI_Action__FLogLevel__ccharp* logger_cstr;
+        FFI_Action__FLogLevel__cwcharp* logger_wstr;
+        FFI_Action__FLogLevel__FrStr8* logger_str8;
+        FFI_Action__FLogLevel__FrStr16* logger_str16;
 
         // fn_func__FrStr16__size_t* utf16_get_utf8_max_len;
         // fn_func__FrStr16_FmStr8__size_t* utf16_to_utf8;
         // fn_func__FrStr16__FString8p* utf16_to_string8;
         //
         // fn_action__voidp_FWindowEventType_voidp* window_event_handle;
-        //
-        // fn_func__FLogLevel_charp__void* logger_cstr;
-        // fn_func__FLogLevel_wcharp__void* logger_wstr;
-        // fn_func__FLogLevel_FrStr8__void* logger_str8;
-        // fn_func__FLogLevel_FrStr16__void* logger_str16;
     };
 
     struct AppVars
     {
-        b8 debug;
+        b8 debug{false};
+        b8 running{true};
     };
 
     struct InitParams
@@ -176,17 +238,5 @@ namespace cc
     struct InitResult
     {
         AppFnVtb* fn_vtb;
-    };
-
-    struct TestStruct
-    {
-        float2 a;
-        float3 b;
-        float4 c;
-    };
-
-    struct FApp : IObject
-    {
-        IMPL_INTERFACE("d11e54f4-30b3-4e1a-92ea-de86d9e9e64f", IObject)
     };
 }

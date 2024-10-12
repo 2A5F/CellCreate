@@ -1,5 +1,6 @@
 #pragma once
 #include "ffi/FFI.h"
+#include "ffi/App.h"
 
 namespace cc
 {
@@ -9,11 +10,55 @@ namespace cc
 
     Rc<FApp>& app();
 
+    inline void Log(const FLogLevel level, const char* msg)
+    {
+        vtb().logger_cstr(level, msg);
+    }
+
+    inline void Log(const FLogLevel level, const wchar_t* msg)
+    {
+        vtb().logger_wstr(level, msg);
+    }
+
+    inline void Log(const FLogLevel level, const FrStr8 msg)
+    {
+        vtb().logger_str8(level, msg);
+    }
+
+    inline void Log(const FLogLevel level, const FrStr16 msg)
+    {
+        vtb().logger_str16(level, msg);
+    }
+
+    template <size_t N>
+    void Log(const FLogLevel level, const char8_t (&msg)[N])
+    {
+        vtb().logger_str8(level, {msg, N});
+    }
+
+    template <size_t N>
+    void Log(const FLogLevel level, const char16_t (&msg)[N])
+    {
+        vtb().logger_str8(level, {msg, N});
+    }
+
     class App final : public Object<FApp>
     {
         IMPL_OBJECT();
 
+        FMessageVtb m_vtb{};
+
     public:
         explicit App() = default;
+
+        FError Init() noexcept override;
+        FError Exit() noexcept override;
+
+        FMessageVtb* MsgVtb() noexcept override;
+
+        FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept override;
+        FError MsgPump() noexcept override;
+
+        FError SendMsg(FMessage type, void* data) noexcept override;
     };
 }
