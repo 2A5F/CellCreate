@@ -1,4 +1,6 @@
 #pragma once
+#include <SDL3/SDL.h>
+
 #include "ffi/FFI.h"
 #include "ffi/App.h"
 
@@ -48,6 +50,8 @@ namespace cc
 
         FMessageVtb m_vtb{};
 
+        bool EventFilter(const SDL_Event& event);
+
     public:
         explicit App() = default;
 
@@ -55,7 +59,7 @@ namespace cc
         FError Exit() noexcept override;
 
         FMessageVtb* MsgVtb() noexcept override;
-        FError MsgPump() noexcept override;
+        FError MsgLoop() noexcept override;
         FError SendMsg(FMessage type, void* data) noexcept override;
 
         FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept override;

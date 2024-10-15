@@ -1,6 +1,10 @@
-﻿using Coplt.Dropping;
+﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using Coplt.Dropping;
 using Game.Native;
+using Game.Utilities;
 using Game.Windowing;
+using Silk.NET.Direct3D12;
 
 namespace Game.Rendering;
 
@@ -8,12 +12,14 @@ namespace Game.Rendering;
 public sealed unsafe partial class RenderingManager
 {
     internal FRendering* m_ptr;
+    internal readonly FRenderingConfig* m_config;
 
     internal RenderingManager()
     {
         FRendering* ptr;
         App.s_native_app->CreateRendering(&ptr).TryThrow();
         m_ptr = ptr;
+        m_config = m_ptr->GetConfigs();
     }
 
     [Drop]
@@ -23,20 +29,36 @@ public sealed unsafe partial class RenderingManager
         ptr->Release();
     }
 
-    internal void Init(Window window)
-    {
-        m_ptr->Init(window.Handle.m_ptr).TryThrow();
-    }
+    internal readonly ConcurrentDictionary<WindowHandle, RenderingContext> RenderingContexts = new();
+
+    internal RenderingContext MakeContext(Window window) => RenderingContexts.GetOrAdd(window.Handle,
+        static (Handle, data) =>
+        {
+            var (window, self) = data;
+            FRenderingContext* ptr;
+            self.m_ptr->MakeContext(Handle.m_ptr, &ptr).TryThrow();
+            var ctx = new RenderingContext(ptr, self, Handle);
+            window.Context = ctx;
+            return ctx;
+        }, (window, this));
 
     public bool VSync
     {
-        get => m_ptr->VSync();
-        set => m_ptr->SetVSync(value).TryThrow();
+        get => m_ptr is null ? throw new NullReferenceException() : m_config->v_sync;
+        set => m_config->v_sync = m_ptr is null ? throw new NullReferenceException() : value;
     }
-
-    internal void OnResize(uint2 size) => m_ptr->OnResize(size).TryThrow();
 
     internal void ReadyFrame() => m_ptr->ReadyFrame().TryThrow();
 
     internal void EndFrame() => m_ptr->EndFrame().TryThrow();
+
+    internal ID3D12GraphicsCommandList6* CurrentCommandList
+    {
+        get
+        {
+            ID3D12GraphicsCommandList6* ptr;
+            m_ptr->CurrentCommandList((void**)&ptr).TryThrow();
+            return ptr;
+        }
+    }
 }

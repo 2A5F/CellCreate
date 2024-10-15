@@ -1,5 +1,8 @@
 #include "Rendering.h"
 
+#include <ranges>
+#include <dxgi1_6.h>
+
 #include "../utils/error.h"
 
 using namespace cc;
@@ -35,50 +38,12 @@ namespace
     }
 }
 
-void Rendering::re_create_rts()
-{
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtv_heap->GetCPUDescriptorHandleForHeapStart());
-
-    // 为每一帧创建一个 RTV。
-    for (size_t n = 0; n < FrameCount; n++)
-    {
-        winrt::check_hresult(m_swap_chain->GetBuffer(n, RT_IID_PPV_ARGS(m_rts[n])));
-        m_device->CreateRenderTargetView(m_rts[n].get(), nullptr, rtvHandle);
-        rtvHandle.Offset(1, m_rtv_descriptor_size);
-    }
-}
-
-void Rendering::Wait(const UINT64 fence_value)
-{
-    if (m_fence->GetCompletedValue() < fence_value)
-    {
-        check_error << m_fence->SetEventOnCompletion(fence_value, m_fence_event);
-        WaitForSingleObjectEx(m_fence_event, INFINITE, false);
-    }
-}
-
-void Rendering::WaitAll()
-{
-    Wait(m_fence_value);
-}
-
-void Rendering::WaitCurrent()
-{
-    Wait(m_frame_fence_values[m_frame_index]);
-}
-
-void Rendering::Signal(const UINT64 fence_value)
-{
-    check_error << m_queue->Signal(m_fence.get(), fence_value);
-}
-
-void Rendering::SignalCurrent()
-{
-    Signal(m_frame_fence_values[m_frame_index] = ++m_fence_value);
-}
-
 Rendering::~Rendering()
 {
+    if (m_on_recording) EndFrame();
+    AfterSubmit();
+    WaitAll();
+
     if (m_info_queue.get() != nullptr && m_callback_cookie != 0)
     {
         check_error << m_info_queue->UnregisterMessageCallback(m_callback_cookie);
@@ -159,70 +124,51 @@ Rendering::Rendering()
                 }
             }
         }
+    }
 
-        // 创建分配器
-        {
-            D3D12MA::ALLOCATOR_DESC allocator_desc = {};
-            allocator_desc.pDevice = m_device.get();
-            allocator_desc.pAdapter = m_adapter.get();
-            allocator_desc.Flags =
-                D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED |
-                D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
-            winrt::check_hresult(CreateAllocator(&allocator_desc, m_gpu_allocator.put()));
-        }
+    // 创建分配器
+    {
+        D3D12MA::ALLOCATOR_DESC allocator_desc = {};
+        allocator_desc.pDevice = m_device.get();
+        allocator_desc.pAdapter = m_adapter.get();
+        allocator_desc.Flags =
+            D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED |
+            D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
+        check_error << CreateAllocator(&allocator_desc, m_gpu_allocator.put());
     }
 
     // 创建队列
     {
-        D3D12_COMMAND_QUEUE_DESC queue_desc = {
-            .Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
-            .Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH,
-            .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
-        };
-        check_error << m_device->CreateCommandQueue(&queue_desc, RT_IID_PPV_ARGS(m_queue));
-        queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        check_error << m_device->CreateCommandQueue(&queue_desc, RT_IID_PPV_ARGS(m_queue_compute));
-        queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-        queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-        check_error << m_device->CreateCommandQueue(&queue_desc, RT_IID_PPV_ARGS(m_queue_copy));
-
-        if (args().debug)
-        {
-            check_error << m_queue->SetName(L"Main Queue");
-            check_error << m_queue_compute->SetName(L"Compute Queue");
-            check_error << m_queue_copy->SetName(L"Copy Queue");
-        }
+        m_queue = std::make_unique<Queue>(
+            this, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, L"Main"
+        );
+        m_queue_compute = std::make_unique<Queue>(
+            this, D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, L"Compute"
+        );
+        m_queue_copy = std::make_unique<Queue>(
+            this, D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, L"Copy"
+        );
     }
 
-    // 创建命令分配器
+    // 创建当前命令列表
     {
-        check_error << m_device->CreateCommandAllocator(
-            D3D12_COMMAND_LIST_TYPE_DIRECT, RT_IID_PPV_ARGS(m_command_allocator)
+        check_error << m_device->CreateCommandList(
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_queue->m_command_allocators[0].get(), nullptr,
+            RT_IID_PPV_ARGS(m_current_command_list)
         );
-        check_error << m_device->CreateCommandAllocator(
-            D3D12_COMMAND_LIST_TYPE_COMPUTE, RT_IID_PPV_ARGS(m_command_allocator_compute)
-        );
-        check_error << m_device->CreateCommandAllocator(
-            D3D12_COMMAND_LIST_TYPE_COPY, RT_IID_PPV_ARGS(m_command_allocator_copy)
-        );
-
-        if (args().debug)
-        {
-            check_error << m_command_allocator->SetName(L"Main Command Allocator");
-            check_error << m_command_allocator_compute->SetName(L"Compute Command Allocator");
-            check_error << m_command_allocator_copy->SetName(L"Copy Command Allocator");
-        }
+        check_error << m_current_command_list->Close();
     }
 
-    // 创建栅栏
+    // 创建栅栏事件
     {
-        check_error << m_device->CreateFence(
-            m_fence_value, D3D12_FENCE_FLAG_NONE, RT_IID_PPV_ARGS(m_fence)
-        );
-
         m_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         if (m_fence_event == nullptr) winrt::throw_last_error();
     }
+}
+
+FRenderingConfig* Rendering::GetConfigs() noexcept
+{
+    return &m_config;
 }
 
 namespace
@@ -279,7 +225,7 @@ namespace
     }
 }
 
-FError Rendering::Init(FWindowHandle* window_handle) noexcept
+FError Rendering::MakeContext(FWindowHandle* window_handle, FRenderingContext** out) noexcept
 {
     void* hwnd;
     uint2 size;
@@ -288,14 +234,250 @@ FError Rendering::Init(FWindowHandle* window_handle) noexcept
     return ferr_back(
         [&]
         {
-            init(hwnd, size);
+            Rc r = new RenderingContext(this, window_handle, hwnd, size);
+            m_contexts[r->m_id] = r;
+            *out = r.leak();
         }
     );
 }
 
-void Rendering::init(void* hwnd, uint2 size)
+void Rendering::WaitAll() const
 {
-    m_current_size = size;
+    m_queue->WaitAll(m_fence_event);
+    m_queue_compute->WaitAll(m_fence_event);
+    m_queue_copy->WaitAll(m_fence_event);
+}
+
+void Rendering::WaitCurrentFrame() const
+{
+    WaitFrame(m_frame_index);
+}
+
+void Rendering::WaitFrame(const UINT32 index) const
+{
+    m_queue->WaitFrame(index, m_fence_event);
+    m_queue_compute->WaitFrame(index, m_fence_event);
+    m_queue_copy->WaitFrame(index, m_fence_event);
+}
+
+void Rendering::MoveToNextFrame()
+{
+    ++m_config.frame_count;
+    ++m_frame_index;
+    if (m_frame_index >= FrameCount) m_frame_index = 0;
+}
+
+void Rendering::ResetCommandAllocator() const
+{
+    ResetCommandAllocator(m_frame_index);
+}
+
+void Rendering::ResetCommandAllocator(const UINT32 index) const
+{
+    check_error << m_queue->m_command_allocators[index]->Reset();
+    check_error << m_queue_compute->m_command_allocators[index]->Reset();
+    check_error << m_queue_copy->m_command_allocators[index]->Reset();
+}
+
+void Rendering::AfterSubmit() const
+{
+    AfterSubmit(m_frame_index);
+}
+
+void Rendering::AfterSubmit(const UINT32 index) const
+{
+    m_queue->SignalFrame(index);
+    m_queue_compute->SignalFrame(index);
+    m_queue_copy->SignalFrame(index);
+}
+
+FError Rendering::ReadyFrame() noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            const auto wait_all = std::ranges::any_of(
+                m_contexts | std::views::values, [](const auto& context) { return context->m_resized; }
+            );
+            if (wait_all)
+            {
+                WaitAll();
+
+                for (const auto& context : m_contexts | std::views::values)
+                {
+                    if (!context->m_resized) continue;
+                    context->do_re_size();
+                }
+
+                MoveToNextFrame();
+            }
+            else
+            {
+                MoveToNextFrame();
+                WaitCurrentFrame();
+            }
+
+            ResetCommandAllocator();
+            check_error << m_current_command_list->Reset(m_queue->m_command_allocators[m_frame_index].get(), nullptr);
+
+            for (const auto& context : m_contexts | std::views::values)
+            {
+                context->ReadyFrame(m_current_command_list.get());
+            }
+
+            m_on_recording = true;
+        }
+    );
+}
+
+FError Rendering::EndFrame() noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            m_on_recording = false;
+
+            for (const auto& context : m_contexts | std::views::values)
+            {
+                context->EndFrame(m_current_command_list.get());
+            }
+
+            check_error << m_current_command_list->Close();
+
+            ID3D12CommandList* command_lists[] = {m_current_command_list.get()};
+            m_queue->m_queue->ExecuteCommandLists(1, command_lists);
+
+            for (const auto& context : m_contexts | std::views::values)
+            {
+                context->Present();
+            }
+
+            AfterSubmit();
+        }
+    );
+}
+
+FError Rendering::CurrentCommandList(void** out) noexcept
+{
+    *out = m_current_command_list.get();
+    return FError::None();
+}
+
+Queue::Queue(
+    Rendering* rendering, const D3D12_COMMAND_LIST_TYPE type, const D3D12_COMMAND_QUEUE_PRIORITY priority, LPCWSTR name
+) : m_rendering(rendering)
+{
+    auto* device = rendering->m_device.get();
+
+    // 创建队列
+    {
+        D3D12_COMMAND_QUEUE_DESC queue_desc = {
+            .Type = type,
+            .Priority = priority,
+            .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+        };
+        check_error << device->CreateCommandQueue(&queue_desc, RT_IID_PPV_ARGS(m_queue));
+
+        if (args().debug)
+        {
+            const auto item_name = fmt::format(L"{} Queue", name);
+            check_error << m_queue->SetName(item_name.c_str());
+        }
+    }
+
+    // 创建栅栏
+    {
+        check_error << device->CreateFence(m_fence_value, D3D12_FENCE_FLAG_NONE, RT_IID_PPV_ARGS(m_fence));
+        if (args().debug)
+        {
+            const auto item_name = fmt::format(L"{} Fence", name);
+            check_error << m_fence->SetName(item_name.c_str());
+        }
+    }
+
+    // 创建命令分配器
+    {
+        for (auto& m_command_allocator : m_command_allocators)
+        {
+            check_error << device->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT, RT_IID_PPV_ARGS(m_command_allocator)
+            );
+        }
+
+        if (args().debug)
+        {
+            for (size_t i = 0; i < FrameCount; ++i)
+            {
+                const auto item_name = fmt::format(L"{} Command Allocator {}", name, i);
+                check_error << m_command_allocators[i]->SetName(item_name.c_str());
+            }
+        }
+    }
+}
+
+void Queue::Wait(const UINT64 fence_value, HANDLE event) const
+{
+    if (m_fence->GetCompletedValue() < fence_value)
+    {
+        check_error << m_fence->SetEventOnCompletion(fence_value, event);
+        WaitForSingleObjectEx(event, INFINITE, false);
+    }
+}
+
+void Queue::WaitAll(HANDLE event) const
+{
+    Wait(m_fence_value, event);
+}
+
+void Queue::WaitFrame(const UINT32 index, HANDLE event) const
+{
+    Wait(m_frame_current_fence_value[index], event);
+}
+
+void Queue::SignalFrame(const UINT32 index)
+{
+    check_error << m_queue->Signal(m_fence.get(), m_frame_current_fence_value[index] = ++m_fence_value);
+}
+
+void RenderingContext::re_create_rts()
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtv_heap->GetCPUDescriptorHandleForHeapStart());
+
+    // 为每一帧创建一个 RTV。
+    for (size_t n = 0; n < FrameCount; n++)
+    {
+        winrt::check_hresult(m_swap_chain->GetBuffer(n, RT_IID_PPV_ARGS(m_rts[n])));
+        m_rendering->m_device->CreateRenderTargetView(m_rts[n].get(), nullptr, rtvHandle);
+        rtvHandle.Offset(1, m_rtv_descriptor_size);
+    }
+}
+
+void RenderingContext::do_re_size()
+{
+    for (auto& rt : m_rts) rt = nullptr;
+
+    DXGI_SWAP_CHAIN_DESC1 desc = {};
+    check_error << m_swap_chain->GetDesc1(&desc);
+    check_error << m_swap_chain->ResizeBuffers(
+        FrameCount, m_new_size.x, m_new_size.y, desc.Format, desc.Flags
+    );
+
+    re_create_rts();
+
+    m_resized = false;
+}
+
+namespace
+{
+    std::atomic_size_t s_rendering_context_id_inc{0};
+}
+
+RenderingContext::RenderingContext(Rendering* rendering, FWindowHandle* window, void* hwnd, uint2 size)
+    : m_id(s_rendering_context_id_inc++), m_rendering(rendering), m_current_size(size), m_new_size(size)
+{
+    m_window = Rc<FWindowHandle>::UnsafeClone(window);
+
+    const auto device = m_rendering->m_device.get();
 
     // 创建交换链
     {
@@ -309,8 +491,8 @@ void Rendering::init(void* hwnd, uint2 size)
         swap_chain_desc.SampleDesc.Count = 1;
 
         ComPtr<IDXGISwapChain1> swap_chain;
-        check_error << m_factory->CreateSwapChainForHwnd(
-            m_queue.get(),
+        check_error << rendering->m_factory->CreateSwapChainForHwnd(
+            rendering->m_queue->m_queue.get(),
             static_cast<HWND>(hwnd),
             &swap_chain_desc,
             nullptr, nullptr,
@@ -319,18 +501,14 @@ void Rendering::init(void* hwnd, uint2 size)
         swap_chain.as(m_swap_chain);
     }
 
-    m_frame_index = m_swap_chain->GetCurrentBackBufferIndex();
-
-    /* 创建交换链RTV描述符堆 */
+    // 创建交换链RTV描述符堆
     {
         D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc = {};
         rtv_heap_desc.NumDescriptors = FrameCount;
         rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
         rtv_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        winrt::check_hresult(
-            m_device->CreateDescriptorHeap(&rtv_heap_desc, RT_IID_PPV_ARGS(m_rtv_heap))
-        );
-        m_rtv_descriptor_size = m_device->GetDescriptorHandleIncrementSize(
+        check_error << device->CreateDescriptorHeap(&rtv_heap_desc, RT_IID_PPV_ARGS(m_rtv_heap));
+        m_rtv_descriptor_size = device->GetDescriptorHandleIncrementSize(
             D3D12_DESCRIPTOR_HEAP_TYPE_RTV
         );
     }
@@ -338,35 +516,56 @@ void Rendering::init(void* hwnd, uint2 size)
     re_create_rts();
 }
 
-FError Rendering::OnResize(uint2 size) noexcept
+void RenderingContext::ReadyFrame(ID3D12GraphicsCommandList6* list)
+{
+    m_frame_index = m_swap_chain->GetCurrentBackBufferIndex();
+    m_current_cpu_handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+        m_rtv_heap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(m_frame_index), m_rtv_descriptor_size
+    );
+
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition = {
+        .pResource = m_rts[m_frame_index].get(),
+        .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        .StateBefore = D3D12_RESOURCE_STATE_PRESENT,
+        .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET,
+    };
+    list->ResourceBarrier(1, &barrier);
+}
+
+void RenderingContext::EndFrame(ID3D12GraphicsCommandList6* list)
+{
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition = {
+        .pResource = m_rts[m_frame_index].get(),
+        .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+        .StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET,
+        .StateAfter = D3D12_RESOURCE_STATE_PRESENT,
+    };
+    list->ResourceBarrier(1, &barrier);
+}
+
+void RenderingContext::Present() const
+{
+    check_error << m_swap_chain->Present(m_rendering->m_config.v_sync ? 1 : 0, 0);
+}
+
+FError RenderingContext::Destroy() noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            m_rendering->m_contexts.erase(m_id);
+        }
+    );
+}
+
+FError RenderingContext::OnResize(uint2 size) noexcept
 {
     if (m_current_size == size) return FError::None();
     m_new_size = size;
     m_resized = true;
-    return FError::None();
-}
-
-b8 Rendering::VSync() noexcept
-{
-    return m_v_sync;
-}
-
-FError Rendering::SetVSync(const b8 enable) noexcept
-{
-    m_v_sync = enable;
-    return FError::None();
-}
-
-FError Rendering::ReadyFrame() noexcept
-{
-    // todo
-
-    return FError::None();
-}
-
-FError Rendering::EndFrame() noexcept
-{
-    // todo
-
     return FError::None();
 }

@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #ifdef CO_SRC
+#include <memory>
 #include <glm/glm.hpp>
 #include <winrt/base.h>
+#include <ankerl/unordered_dense.h>
 #endif
 
 namespace cc
@@ -47,6 +49,18 @@ namespace cc
 
     template <class T>
     using ComPtr = winrt::com_ptr<T>;
+
+    template <class T>
+    using Box = std::unique_ptr<T>;
+
+    template <class T>
+    using List = std::vector<T>;
+
+    template <class K, class V>
+    using HashMap = ankerl::unordered_dense::map<K, V>;
+
+    template <class V>
+    using HashSet = ankerl::unordered_dense::set<V>;
 
     #else
     using f32 = float;

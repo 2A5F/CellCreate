@@ -29,4 +29,10 @@ public static class WindowManager
             App.Vars.running = false;
         }
     }
+
+    internal static void OnWindowResized(WindowId id)
+    {
+        if (!s_windows.TryGetValue(id, out var window)) return;
+        window.OnResized();
+    }
 }

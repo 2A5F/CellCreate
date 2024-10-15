@@ -30,7 +30,7 @@ public static class App
     {
         Window = await Window.Create(new("CC", 1280, 720) { MinSize = new(640, 360), Resizable = true, });
         Window.MarkMain();
-        Rendering.Init(Window);
+        Rendering.MakeContext(Window);
         while (Vars.running)
         {
             Rendering.ReadyFrame();

@@ -16,10 +16,7 @@ public static class MessageLoop
     internal static unsafe void Loop()
     {
         (MessageThread = Thread.CurrentThread).Name = "Message Loop";
-        while (App.Vars.running)
-        {
-            App.s_native_app->MsgPump().TryThrow();
-        }
+        App.s_native_app->MsgLoop().TryThrow();
     }
 
     private static Thread MessageThread { get; set; } = null!;
@@ -59,6 +56,11 @@ public static class MessageLoop
             case FMessage.WindowClose:
             {
                 WindowManager.OnWindowClosed(new((uint)data));
+                return;
+            }
+            case FMessage.WindowResize:
+            {
+                WindowManager.OnWindowResized(new((uint)data));
                 return;
             }
         }

@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Game.Native;
+using Game.Rendering;
 
 namespace Game.Windowing;
 
@@ -8,11 +9,16 @@ public sealed class Window
     internal WindowHandle? m_handle;
 
     internal Window(WindowHandle mHandle) => m_handle = mHandle;
-    
+
     internal WindowHandle Handle => m_handle ?? throw new NullReferenceException("The window was destroyed");
+
+    public RenderingContext? Context { get; internal set; }
+
+    public event Action<uint2>? OnResize;
 
     internal void Destroy()
     {
+        Context?.Destroy();
         Handle.Dispose();
         m_handle = null;
     }
@@ -66,7 +72,7 @@ public sealed class Window
     }
 
     public WindowId Id => Handle.Id;
-    
+
     public uint2 Size => Handle.Size;
     public uint2 PixelSize => Handle.PixelSize;
 
@@ -81,5 +87,12 @@ public sealed class Window
     public void Close()
     {
         WindowManager.OnWindowClosed(Id);
+    }
+
+    internal void OnResized()
+    {
+        var new_size = Size;
+        OnResize?.Invoke(new_size);
+        Context?.OnResize(new_size);
     }
 }

@@ -100,4 +100,49 @@ namespace cc
         }
         return FError::None();
     }
+
+    auto err_back(auto f, auto defv) noexcept
+    {
+        try
+        {
+            ::cpptrace::detail::try_canary cpptrace_try_canary;
+            return [&]
+            {
+                __try
+                {
+                    return [&]
+                    {
+                        return f();
+                    }();
+                }
+                __except (::cpptrace::detail::exception_filter())
+                {
+                }
+            }();
+        }
+        catch (std::exception& ex)
+        {
+            const auto msg = fmt::format("{}\n{}", ex.what(), cpptrace::from_current_exception().to_string());
+            Log(FLogLevel::Error, FrStr8(reinterpret_cast<const char8_t*>(msg.data()), msg.size()));
+            return defv;
+        }
+        catch (winrt::hresult_error& ex)
+        {
+            const auto msg = fmt::format(
+                L"{}\n{}", ex.message().c_str(),
+                fmt::detail::utf8_to_utf16(cpptrace::from_current_exception().to_string()).c_str()
+            );
+            Log(FLogLevel::Error, FrStr16(reinterpret_cast<const char16_t*>(msg.data()), msg.size()));
+            return defv;
+        }
+        catch (...)
+        {
+            const auto msg = fmt::format(
+                "Unknown failure occurred. Possible memory corruption\n{}",
+                cpptrace::from_current_exception().to_string()
+            );
+            Log(FLogLevel::Error, FrStr8(reinterpret_cast<const char8_t*>(msg.data()), msg.size()));
+            return defv;
+        }
+    }
 }

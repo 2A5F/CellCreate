@@ -304,7 +304,7 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError MsgPump()
+        public FError MsgLoop()
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[12]))((FApp*)Unsafe.AsPointer(ref this), &result);
@@ -382,6 +382,7 @@ namespace Game.Native
         Nop,
         SwitchThread,
         WindowClose,
+        WindowResize,
     }
 
     public unsafe partial struct FMessageVtb
@@ -562,6 +563,15 @@ namespace Game.Native
         public const uint FrameCount = 3;
     }
 
+    public partial struct FRenderingConfig
+    {
+        [NativeTypeName("size_t")]
+        public nuint frame_count;
+
+        [NativeTypeName("cc::b8")]
+        public B8 v_sync;
+    }
+
     [NativeTypeName("struct FRendering : cc::IObject, cc::FGpuConsts")]
     public unsafe partial struct FRendering
     {
@@ -631,34 +641,18 @@ namespace Game.Native
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NativeTypeName("cc::FError")]
-        public FError Init([NativeTypeName("cc::FWindowHandle *")] FWindowHandle* window_handle)
+        [return: NativeTypeName("cc::FRenderingConfig *")]
+        public FRenderingConfig* GetConfigs()
         {
-            FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FWindowHandle*, FError*>)(lpVtbl[9]))((FRendering*)Unsafe.AsPointer(ref this), &result, window_handle);
+            return ((delegate* unmanaged[Thiscall]<FRendering*, FRenderingConfig*>)(lpVtbl[9]))((FRendering*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError OnResize([NativeTypeName("cc::uint2")] uint2 size)
+        public FError MakeContext([NativeTypeName("cc::FWindowHandle *")] FWindowHandle* window_handle, FRenderingContext** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, uint2, FError*>)(lpVtbl[10]))((FRendering*)Unsafe.AsPointer(ref this), &result, size);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NativeTypeName("cc::b8")]
-        public B8 VSync()
-        {
-            return ((delegate* unmanaged[Thiscall]<FRendering*, B8>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NativeTypeName("cc::FError")]
-        public FError SetVSync([NativeTypeName("cc::b8")] B8 enable)
-        {
-            FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, B8, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, enable);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FWindowHandle*, FRenderingContext**, FError*>)(lpVtbl[10]))((FRendering*)Unsafe.AsPointer(ref this), &result, window_handle, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -666,7 +660,7 @@ namespace Game.Native
         public FError ReadyFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -674,7 +668,100 @@ namespace Game.Native
         public FError EndFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CurrentCommandList(void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+    }
+
+    [NativeTypeName("struct FRenderingContext : cc::IObject, cc::FGpuConsts")]
+    public unsafe partial struct FRenderingContext
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "b0378104-80ee-4272-9c58-3af6e35ec437";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FRenderingContext*, void>)(lpVtbl[0]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[1]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[2]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[3]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[4]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, B8>)(lpVtbl[5]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, B8>)(lpVtbl[6]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, void*>)(lpVtbl[7]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, Guid, void*>)(lpVtbl[8]))((FRenderingContext*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError Destroy()
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRenderingContext*, FError*, FError*>)(lpVtbl[9]))((FRenderingContext*)Unsafe.AsPointer(ref this), &result);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError OnResize([NativeTypeName("cc::uint2")] uint2 size)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRenderingContext*, FError*, uint2, FError*>)(lpVtbl[10]))((FRenderingContext*)Unsafe.AsPointer(ref this), &result, size);
         }
     }
 }

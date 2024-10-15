@@ -66,29 +66,55 @@ FError App::CreateRendering(FRendering*& out) noexcept
     return Rendering::Create(out);
 }
 
-FError App::MsgPump() noexcept
+// true 表示允许将事件添加到队列，false 表示不允许。与 SDL_AddEventWatch 一起使用时，返回值将被忽略。
+bool App::EventFilter(const SDL_Event& event) // NOLINT(*-make-member-function-const)
 {
-    SDL_Event event;
-    if (SDL_WaitEvent(&event))
+    if (event.type == SDL_EVENT_WINDOW_RESIZED)
     {
-        if (event.type == SDL_EVENT_QUIT)
+        m_vtb.on_message(FMessage::WindowResize, reinterpret_cast<void*>(static_cast<size_t>(event.window.windowID)));
+    }
+    return true;
+}
+
+FError App::MsgLoop() noexcept
+{
+    if (!SDL_AddEventWatch(
+        [](void* data, SDL_Event* event)
         {
-            args().running = false;
-        }
-        else if (event.type == SDL_EVENT_USER)
+            const auto self = static_cast<App*>(data);
+            return err_back([&] { return self->EventFilter(*event); }, true);
+        }, this
+    ))
+        return SdlError::FFI();
+
+    return ferr_back(
+        [&]
         {
-            const auto type = static_cast<FMessage>(event.user.code);
-            if (type == FMessage::SwitchThread)
+            while (args().running)
             {
-                m_vtb.on_message(type, event.user.data1);
+                SDL_Event event;
+                if (SDL_WaitEvent(&event))
+                {
+                    if (event.type == SDL_EVENT_QUIT)
+                    {
+                        args().running = false;
+                    }
+                    else if (event.type == SDL_EVENT_USER)
+                    {
+                        const auto type = static_cast<FMessage>(event.user.code);
+                        if (type == FMessage::SwitchThread)
+                        {
+                            m_vtb.on_message(type, event.user.data1);
+                        }
+                    }
+                    else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
+                    {
+                        m_vtb.on_message(
+                            FMessage::WindowClose, reinterpret_cast<void*>(static_cast<size_t>(event.window.windowID))
+                        );
+                    }
+                }
             }
         }
-        else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-        {
-            m_vtb.on_message(
-                FMessage::WindowClose, reinterpret_cast<void*>(static_cast<size_t>(event.window.windowID))
-            );
-        }
-    }
-    return FError::None();
+    );
 }
