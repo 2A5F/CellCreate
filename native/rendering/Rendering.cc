@@ -363,6 +363,20 @@ FError Rendering::CurrentCommandList(void** out) noexcept
     return FError::None();
 }
 
+FError Rendering::ClearSurface(FRenderingContext* ctx, float4 color) noexcept
+{
+    if (!m_on_recording) return FError::Common(str16(u"Frame not started"));
+    return ferr_back(
+        [&]
+        {
+            const auto* context = static_cast<RenderingContext*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
+            m_current_command_list->ClearRenderTargetView(
+                context->m_current_cpu_handle, reinterpret_cast<FLOAT*>(&color), 0, nullptr
+            );
+        }
+    );
+}
+
 Queue::Queue(
     Rendering* rendering, const D3D12_COMMAND_LIST_TYPE type, const D3D12_COMMAND_QUEUE_PRIORITY priority, LPCWSTR name
 ) : m_rendering(rendering)

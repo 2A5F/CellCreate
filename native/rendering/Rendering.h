@@ -72,6 +72,8 @@ namespace cc
         FError EndFrame() noexcept override;
 
         FError CurrentCommandList(void** out) noexcept override;
+
+        FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept override;
     };
 
     class Queue final : public FGpuConsts

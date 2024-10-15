@@ -10,6 +10,7 @@ namespace cc
     };
 
     struct FRenderingContext;
+    struct FCommandList;
 
     struct FRenderingConfig
     {
@@ -30,6 +31,8 @@ namespace cc
 
         // out 是 ID3D12GraphicsCommandList6**
         virtual FError CurrentCommandList(void** out) noexcept = 0;
+
+        virtual FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept = 0;
     };
 
     struct FRenderingContext : IObject, FGpuConsts

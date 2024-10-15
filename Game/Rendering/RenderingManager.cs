@@ -52,7 +52,7 @@ public sealed unsafe partial class RenderingManager
 
     internal void EndFrame() => m_ptr->EndFrame().TryThrow();
 
-    internal ID3D12GraphicsCommandList6* CurrentCommandList
+    public ID3D12GraphicsCommandList6* CurrentCommandList
     {
         get
         {
@@ -61,4 +61,6 @@ public sealed unsafe partial class RenderingManager
             return ptr;
         }
     }
+
+    public void ClearSurface(RenderingContext ctx, float4 color) => m_ptr->ClearSurface(ctx.m_ptr, color).TryThrow();
 }

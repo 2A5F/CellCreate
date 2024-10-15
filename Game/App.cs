@@ -34,7 +34,8 @@ public static class App
         while (Vars.running)
         {
             Rendering.ReadyFrame();
-            
+            Rendering.ClearSurface(Window.Context!, new(1, 1, 1, 1));
+
             Rendering.EndFrame();
         }
     }

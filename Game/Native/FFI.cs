@@ -563,6 +563,10 @@ namespace Game.Native
         public const uint FrameCount = 3;
     }
 
+    public partial struct FCommandList
+    {
+    }
+
     public partial struct FRenderingConfig
     {
         [NativeTypeName("size_t")]
@@ -677,6 +681,14 @@ namespace Game.Native
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError ClearSurface([NativeTypeName("cc::FRenderingContext *")] FRenderingContext* ctx, [NativeTypeName("cc::float4")] float4 color)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, float4, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
         }
     }
 
