@@ -22,9 +22,9 @@ public static class MessageLoop
     private static Thread MessageThread { get; set; } = null!;
 
     private static ConcurrentQueue<Action> s_message_thread_requests = new();
-    internal static SwitchToMessageThreadTask SwitchToMessageThread() => new();
+    internal static SwitchToMessageThreadAwaitable SwitchToMessageThread() => new();
 
-    internal struct SwitchToMessageThreadTask
+    internal struct SwitchToMessageThreadAwaitable
     {
         public SwitchToMessageThreadAwaiter GetAwaiter() => new();
     }

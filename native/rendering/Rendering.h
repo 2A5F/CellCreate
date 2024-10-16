@@ -13,6 +13,7 @@ namespace cc
 {
     class Queue;
     class RenderingContext;
+    class DescriptorSet;
 
     class Rendering final : public Object<FRendering>
     {
@@ -30,17 +31,17 @@ namespace cc
         Box<Queue> m_queue_compute{};
         Box<Queue> m_queue_copy{};
 
+        Box<DescriptorSet> m_descriptors{};
+
         ComPtr<ID3D12GraphicsCommandList6> m_current_command_list{};
+        ComPtr<ID3D12RootSignature> m_bind_less_root_signature{};
 
         HANDLE m_fence_event{};
-        UINT m_frame_index{};
-        DWORD m_callback_cookie{};
 
-        bool m_on_recording{};
+        FRenderingState m_state{};
 
         HashMap<size_t, Rc<RenderingContext>> m_contexts{};
-
-        FRenderingConfig m_config{};
+        DWORD m_callback_cookie{};
 
     protected:
         ~Rendering() override;
@@ -54,6 +55,7 @@ namespace cc
 
         void ResetCommandAllocator() const;
         void ResetCommandAllocator(UINT32 index) const;
+        void ResetAllCommandAllocator() const;
 
         void AfterSubmit() const;
         void AfterSubmit(UINT32 index) const;
@@ -64,16 +66,20 @@ namespace cc
 
         explicit Rendering();
 
-        FRenderingConfig* GetConfigs() noexcept override;
+        FRenderingState* StatePtr() noexcept override;
 
         FError MakeContext(FWindowHandle* window_handle, FRenderingContext** out) noexcept override;
+
+        FError CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept override;
 
         FError ReadyFrame() noexcept override;
         FError EndFrame() noexcept override;
 
+        FError GetDevice(void** out) noexcept override;
         FError CurrentCommandList(void** out) noexcept override;
 
         FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept override;
+
     };
 
     class Queue final : public FGpuConsts
@@ -98,6 +104,8 @@ namespace cc
         void WaitFrame(UINT32 index, HANDLE event) const;
 
         void SignalFrame(UINT32 index);
+
+        void ReSet(UINT32 index);
     };
 
     class RenderingContext final : public Object<FRenderingContext>
@@ -137,5 +145,36 @@ namespace cc
         FError Destroy() noexcept override;
 
         FError OnResize(uint2 size) noexcept override;
+    };
+
+    class DescriptorHeap final : public FGpuConsts
+    {
+    public:
+        constexpr static size_t InitSize = 1024;
+
+        ComPtr<ID3D12DescriptorHeap> m_cpu_heap{};
+        ComPtr<ID3D12DescriptorHeap> m_gpu_heap[FrameCount]{};
+        size_t m_cpu_size{InitSize};
+        size_t m_gpu_size{InitSize};
+
+        explicit DescriptorHeap(const Rendering* rendering, D3D12_DESCRIPTOR_HEAP_TYPE type);
+
+        ID3D12DescriptorHeap* CurrentHeap(UINT32 frame) const;
+
+        void ReadyFrame();
+    };
+
+    class DescriptorSet final
+    {
+    public:
+        Rendering* m_rendering;
+        DescriptorHeap m_heap_resource;
+        DescriptorHeap m_heap_sampler;
+
+        explicit DescriptorSet(Rendering* rendering);
+
+        std::array<ID3D12DescriptorHeap*, 2> CurrentHeaps(UINT32 frame) const;
+
+        void ReadyFrame();
     };
 } // cc

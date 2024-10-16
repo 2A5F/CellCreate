@@ -5,3 +5,4 @@ pass:
   rect:
     vs: vert_rect
     ps: pixe_rect
+    Topology: TriangleStrip

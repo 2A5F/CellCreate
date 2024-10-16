@@ -1,7 +1,7 @@
 import * as path from "https://deno.land/std@0.224.0/path/mod.ts";
 import yaml from "npm:yaml";
 import { exists } from "https://deno.land/std@0.224.0/fs/exists.ts";
-import type { ShaderMeta } from "./ShaderMeta.ts";
+import { type ShaderMeta, ShaderStages } from "./ShaderMeta.ts";
 
 console.log(
   "================================================== start build shader ==================================================",
@@ -80,6 +80,8 @@ async function build({
 
   for (const [pass_name, pass] of Object.entries(meta.pass)) {
     for (const [stage, entry] of Object.entries(pass)) {
+      // deno-lint-ignore no-explicit-any
+      if (!ShaderStages.includes(stage as any)) continue;
       const output_dxil = path.resolve(tmp_path, `${pass_name}.${stage}.dxil`);
       const output_asm = path.resolve(tmp_path, `${pass_name}.${stage}.asm`);
       const output_re = path.resolve(tmp_path, `${pass_name}.${stage}.re.bin`);
@@ -91,7 +93,7 @@ async function build({
           "-T",
           `${stage}_6_6`,
           "-E",
-          entry,
+          entry as string,
           ...(is_debug ? ["-Od", "-Zi", "-Qembed_debug"] : ["-O3", "-Zs"]),
           "-Fo",
           output_dxil,
@@ -123,7 +125,18 @@ async function build({
   {
     const meta_data = {
       passes: Object.fromEntries(
-        Object.entries(meta.pass).map(([k, v]) => [k, Object.keys(v)]),
+        Object.entries(meta.pass).map((
+          [k, v],
+        ) => [k, {
+          // deno-lint-ignore no-explicit-any
+          stages: Object.keys(v).filter((k) => ShaderStages.includes(k as any)),
+          states: Object.fromEntries(
+            Object.entries(v).filter((e) =>
+              // deno-lint-ignore no-explicit-any
+              !ShaderStages.includes(e[0] as any)
+            ),
+          ),
+        }]),
       ),
     };
     const meta_output_path = path.resolve(tmp_path, ".meta");

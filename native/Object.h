@@ -651,13 +651,4 @@ namespace cc
     };
 
     #endif
-
-    /* 语义化的 bool 值 */
-    enum class Switch : uint8_t
-    {
-        /* 关闭 */
-        Off = 0,
-        /* 启用 */
-        On = 1,
-    };
 }

@@ -80,6 +80,8 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/ffi/Rendering.h
         native/rendering/Rendering.cc
         native/rendering/Rendering.h
+        native/ffi/Shader.h
+        native/ffi/TextureFormat.h
 )
 
 if (WIN32)

@@ -2,6 +2,7 @@
 
 #include <ranges>
 #include <dxgi1_6.h>
+#include <directxtk12/DirectXHelpers.h>
 
 #include "../utils/error.h"
 
@@ -36,11 +37,77 @@ namespace
         const auto msg = fmt::format("[DirectX] {}", pDescription);
         Log(level, FrStr8(reinterpret_cast<const char8_t*>(msg.data()), msg.size())); //todo 添加重载避免格式化
     }
+
+    namespace static_samplers
+    {
+        constexpr D3D12_STATIC_SAMPLER_DESC s_static_samplers[] = {
+            /* point clamp */ {
+                .Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
+                .AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                .AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                .AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                .MaxAnisotropy = 1,
+                .MinLOD = -FLT_MAX,
+                .MaxLOD = FLT_MAX,
+                .ShaderRegister = 0,
+            },
+            /* point wrap */ {
+                .Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
+                .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                .MaxAnisotropy = 1,
+                .MinLOD = -FLT_MAX,
+                .MaxLOD = FLT_MAX,
+                .ShaderRegister = 1,
+            },
+            /* point mirror */ {
+                .Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
+                .AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+                .AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+                .AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+                .MaxAnisotropy = 1,
+                .MinLOD = -FLT_MAX,
+                .MaxLOD = FLT_MAX,
+                .ShaderRegister = 2,
+            },
+            /* liner clamp */ {
+                .Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                .AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                .AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                .AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                .MaxAnisotropy = 1,
+                .MinLOD = -FLT_MAX,
+                .MaxLOD = FLT_MAX,
+                .ShaderRegister = 3,
+            },
+            /* liner wrap */ {
+                .Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                .AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                .AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                .AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                .MaxAnisotropy = 1,
+                .MinLOD = -FLT_MAX,
+                .MaxLOD = FLT_MAX,
+                .ShaderRegister = 4,
+            },
+            /* liner mirror */ {
+                .Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                .AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+                .AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+                .AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+                .MaxAnisotropy = 1,
+                .MinLOD = -FLT_MAX,
+                .MaxLOD = FLT_MAX,
+                .ShaderRegister = 5,
+            },
+        };
+    }
 }
 
 Rendering::~Rendering()
 {
-    if (m_on_recording) EndFrame();
+    if (m_state._on_recording) EndFrame();
     AfterSubmit();
     WaitAll();
 
@@ -164,11 +231,37 @@ Rendering::Rendering()
         m_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         if (m_fence_event == nullptr) winrt::throw_last_error();
     }
+
+    // 创建无绑定根签名
+    {
+        D3D12_ROOT_SIGNATURE_DESC desc = {};
+        desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+            | D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED
+            | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+        desc.pStaticSamplers = static_samplers::s_static_samplers;
+        desc.NumStaticSamplers = std::size(static_samplers::s_static_samplers);
+        D3D12_ROOT_PARAMETER root_parameter[1] = {};
+        root_parameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+        root_parameter[0].Constants.Num32BitValues = 4;
+        desc.pParameters = root_parameter;
+        desc.NumParameters = std::size(root_parameter);
+        check_error << DirectX::CreateRootSignature(m_device.get(), &desc, m_bind_less_root_signature.put());
+
+        if (args().debug)
+        {
+            check_error << m_bind_less_root_signature->SetName(L"Bind Less Root Signature");
+        }
+    }
+
+    // 创建描述符堆
+    {
+        m_descriptors = std::make_unique<DescriptorSet>(this);
+    }
 }
 
-FRenderingConfig* Rendering::GetConfigs() noexcept
+FRenderingState* Rendering::StatePtr() noexcept
 {
-    return &m_config;
+    return &m_state;
 }
 
 namespace
@@ -241,6 +334,12 @@ FError Rendering::MakeContext(FWindowHandle* window_handle, FRenderingContext** 
     );
 }
 
+FError Rendering::CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept
+{
+    // todo
+    return FError::None();
+}
+
 void Rendering::WaitAll() const
 {
     m_queue->WaitAll(m_fence_event);
@@ -250,7 +349,7 @@ void Rendering::WaitAll() const
 
 void Rendering::WaitCurrentFrame() const
 {
-    WaitFrame(m_frame_index);
+    WaitFrame(m_state._frame_index);
 }
 
 void Rendering::WaitFrame(const UINT32 index) const
@@ -262,26 +361,34 @@ void Rendering::WaitFrame(const UINT32 index) const
 
 void Rendering::MoveToNextFrame()
 {
-    ++m_config.frame_count;
-    ++m_frame_index;
-    if (m_frame_index >= FrameCount) m_frame_index = 0;
+    ++m_state.frame_count;
+    ++m_state._frame_index;
+    if (m_state._frame_index >= FrameCount) m_state._frame_index = 0;
 }
 
 void Rendering::ResetCommandAllocator() const
 {
-    ResetCommandAllocator(m_frame_index);
+    ResetCommandAllocator(m_state._frame_index);
 }
 
 void Rendering::ResetCommandAllocator(const UINT32 index) const
 {
-    check_error << m_queue->m_command_allocators[index]->Reset();
-    check_error << m_queue_compute->m_command_allocators[index]->Reset();
-    check_error << m_queue_copy->m_command_allocators[index]->Reset();
+    m_queue->ReSet(index);
+    m_queue_compute->ReSet(index);
+    m_queue_copy->ReSet(index);
+}
+
+void Rendering::ResetAllCommandAllocator() const
+{
+    for (auto i = 0; i < FrameCount; ++i)
+    {
+        ResetCommandAllocator(i);
+    }
 }
 
 void Rendering::AfterSubmit() const
 {
-    AfterSubmit(m_frame_index);
+    AfterSubmit(m_state._frame_index);
 }
 
 void Rendering::AfterSubmit(const UINT32 index) const
@@ -302,6 +409,7 @@ FError Rendering::ReadyFrame() noexcept
             if (wait_all)
             {
                 WaitAll();
+                ResetAllCommandAllocator();
 
                 for (const auto& context : m_contexts | std::views::values)
                 {
@@ -318,14 +426,21 @@ FError Rendering::ReadyFrame() noexcept
             }
 
             ResetCommandAllocator();
-            check_error << m_current_command_list->Reset(m_queue->m_command_allocators[m_frame_index].get(), nullptr);
+            check_error << m_current_command_list->Reset(
+                m_queue->m_command_allocators[m_state._frame_index].get(), nullptr
+            );
+
+            {
+                const auto descriptor_heaps = m_descriptors->CurrentHeaps(m_state._frame_index);
+                m_current_command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
+            }
 
             for (const auto& context : m_contexts | std::views::values)
             {
                 context->ReadyFrame(m_current_command_list.get());
             }
 
-            m_on_recording = true;
+            m_state._on_recording = true;
         }
     );
 }
@@ -335,7 +450,7 @@ FError Rendering::EndFrame() noexcept
     return ferr_back(
         [&]
         {
-            m_on_recording = false;
+            m_state._on_recording = false;
 
             for (const auto& context : m_contexts | std::views::values)
             {
@@ -357,6 +472,12 @@ FError Rendering::EndFrame() noexcept
     );
 }
 
+FError Rendering::GetDevice(void** out) noexcept
+{
+    *out = m_device.get();
+    return FError::None();
+}
+
 FError Rendering::CurrentCommandList(void** out) noexcept
 {
     *out = m_current_command_list.get();
@@ -365,7 +486,7 @@ FError Rendering::CurrentCommandList(void** out) noexcept
 
 FError Rendering::ClearSurface(FRenderingContext* ctx, float4 color) noexcept
 {
-    if (!m_on_recording) return FError::Common(str16(u"Frame not started"));
+    if (!m_state._on_recording) return FError::Common(str16(u"Frame not started"));
     return ferr_back(
         [&]
         {
@@ -451,6 +572,11 @@ void Queue::WaitFrame(const UINT32 index, HANDLE event) const
 void Queue::SignalFrame(const UINT32 index)
 {
     check_error << m_queue->Signal(m_fence.get(), m_frame_current_fence_value[index] = ++m_fence_value);
+}
+
+void Queue::ReSet(const UINT32 index)
+{
+    check_error << m_command_allocators[index]->Reset();
 }
 
 void RenderingContext::re_create_rts()
@@ -563,7 +689,7 @@ void RenderingContext::EndFrame(ID3D12GraphicsCommandList6* list)
 
 void RenderingContext::Present() const
 {
-    check_error << m_swap_chain->Present(m_rendering->m_config.v_sync ? 1 : 0, 0);
+    check_error << m_swap_chain->Present(m_rendering->m_state.v_sync ? 1 : 0, 0);
 }
 
 FError RenderingContext::Destroy() noexcept
@@ -582,4 +708,62 @@ FError RenderingContext::OnResize(uint2 size) noexcept
     m_new_size = size;
     m_resized = true;
     return FError::None();
+}
+
+DescriptorHeap::DescriptorHeap(const Rendering* rendering, const D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+    auto* device = rendering->m_device.get();
+    D3D12_DESCRIPTOR_HEAP_DESC desc{};
+    desc.Type = type;
+    desc.NumDescriptors = InitSize;
+    check_error << device->CreateDescriptorHeap(&desc, RT_IID_PPV_ARGS(m_cpu_heap));
+    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    for (auto& gpu_heap : m_gpu_heap)
+    {
+        check_error << device->CreateDescriptorHeap(&desc, RT_IID_PPV_ARGS(gpu_heap));
+    }
+
+    if (args().debug)
+    {
+        auto t = type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? L"Sampler" : L"Resource";
+        {
+            const auto item_name = fmt::format(L"Cpu {} Descriptor Heap", t);
+            check_error << m_cpu_heap->SetName(item_name.c_str());
+        }
+        for (int i = 0; i < FrameCount; ++i)
+        {
+            if (m_gpu_heap[i] != nullptr)
+            {
+                const auto item_name = fmt::format(L"Gpu {} Descriptor Heap {}", t, i);
+                check_error << m_gpu_heap[i]->SetName(item_name.c_str());
+            }
+        }
+    }
+}
+
+ID3D12DescriptorHeap* DescriptorHeap::CurrentHeap(const UINT32 frame) const
+{
+    return m_gpu_heap[frame].get();
+}
+
+void DescriptorHeap::ReadyFrame()
+{
+    // todo
+}
+
+DescriptorSet::DescriptorSet(Rendering* rendering) : m_rendering(rendering),
+    m_heap_resource(rendering, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
+    m_heap_sampler(rendering, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
+{
+}
+
+std::array<ID3D12DescriptorHeap*, 2> DescriptorSet::CurrentHeaps(const UINT32 frame) const
+{
+    return {m_heap_resource.CurrentHeap(frame), m_heap_sampler.CurrentHeap(frame)};
+}
+
+void DescriptorSet::ReadyFrame()
+{
+    m_heap_resource.ReadyFrame();
+    m_heap_sampler.ReadyFrame();
 }

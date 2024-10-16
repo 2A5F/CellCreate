@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Game.Native;
 using Game.Rendering;
+using Game.Utilities;
 using Game.Windowing;
 
 namespace Game;
@@ -20,7 +21,7 @@ public static class App
         s_native_app->Init();
         Rendering = new();
         MessageLoop.InitMessageLoop();
-        new Thread(MainLoop) { Name = "Main Loop" }.Start();
+        MainLoop();
         MessageLoop.Loop();
         s_native_app->Exit();
         return 0;
@@ -28,9 +29,14 @@ public static class App
 
     internal static async void MainLoop()
     {
+        await Shaders.LoadShaders();
         Window = await Window.Create(new("CC", 1280, 720) { MinSize = new(640, 360), Resizable = true, });
         Window.MarkMain();
         Rendering.MakeContext(Window);
+        await TaskUtils.SwitchToLongRunning();
+
+        var shader_ui_rect = Shaders.TryGetShader("ui/ui")!;
+        
         while (Vars.running)
         {
             Rendering.ReadyFrame();

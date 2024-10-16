@@ -12,14 +12,14 @@ namespace Game.Rendering;
 public sealed unsafe partial class RenderingManager
 {
     internal FRendering* m_ptr;
-    internal readonly FRenderingConfig* m_config;
+    internal readonly FRenderingState* m_state;
 
     internal RenderingManager()
     {
         FRendering* ptr;
         App.s_native_app->CreateRendering(&ptr).TryThrow();
         m_ptr = ptr;
-        m_config = m_ptr->GetConfigs();
+        m_state = m_ptr->StatePtr();
     }
 
     [Drop]
@@ -44,13 +44,25 @@ public sealed unsafe partial class RenderingManager
 
     public bool VSync
     {
-        get => m_ptr is null ? throw new NullReferenceException() : m_config->v_sync;
-        set => m_config->v_sync = m_ptr is null ? throw new NullReferenceException() : value;
+        get => m_ptr is null ? throw new NullReferenceException() : m_state->v_sync;
+        set => m_state->v_sync = m_ptr is null ? throw new NullReferenceException() : value;
     }
+
+    public ulong FrameCount => m_ptr is null ? throw new NullReferenceException() : m_state->frame_count;
 
     internal void ReadyFrame() => m_ptr->ReadyFrame().TryThrow();
 
     internal void EndFrame() => m_ptr->EndFrame().TryThrow();
+
+    public ID3D12Device2* Device
+    {
+        get
+        {
+            ID3D12Device2* ptr;
+            m_ptr->GetDevice((void**)&ptr).TryThrow();
+            return ptr;
+        }
+    }
 
     public ID3D12GraphicsCommandList6* CurrentCommandList
     {

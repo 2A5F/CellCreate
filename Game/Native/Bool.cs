@@ -11,8 +11,13 @@ public readonly record struct B8(sbyte value)
     public static implicit operator B8(bool v) => new(v ? (sbyte)1 : (sbyte)0);
     public static implicit operator B8(sbyte v) => new(v);
     public static implicit operator B8(byte v) => new((sbyte)v);
+    public static implicit operator B8(int v) => new((sbyte)v);
+    public static implicit operator B8(uint v) => new((sbyte)v);
 
     public override string ToString() => this ? "true" : "false";
+
+    public static int operator <<(B8 v, int i) => v.value << i;
+    public static int operator &(B8 v, int i) => v.value & i;
 }
 
 public readonly record struct B32(int value)

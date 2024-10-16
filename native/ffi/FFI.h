@@ -17,6 +17,27 @@ namespace cc
     using Char16 = uint16_t;
     #endif
 
+    class FmBlob
+    {
+        char* const m_data;
+        const size_t m_size;
+
+    public:
+        explicit constexpr FmBlob(char* data, const size_t size): m_data(data), m_size(size)
+        {
+        }
+
+        char* data() const
+        {
+            return m_data;
+        }
+
+        size_t size() const
+        {
+            return m_size;
+        }
+    };
+
     class FmStr8
     {
         Char8* const m_data;
@@ -49,6 +70,39 @@ namespace cc
         }
 
         Char16* data() const
+        {
+            return m_data;
+        }
+
+        size_t size() const
+        {
+            return m_size;
+        }
+    };
+
+    class FrBlob
+    {
+        const char* const m_data;
+        const size_t m_size;
+
+    public:
+        explicit constexpr FrBlob(const char* data, const size_t size): m_data(data), m_size(size)
+        {
+        }
+
+        FrBlob(FmBlob m) : m_data(m.data()), m_size(m.size()) // NOLINT(*-explicit-constructor)
+        {
+        }
+
+        #if CO_SRC
+        FrBlob& operator=(const FmBlob m)
+        {
+            new(this)FrBlob(m);
+            return *this;
+        }
+        #endif
+
+        const char* data() const
         {
             return m_data;
         }
