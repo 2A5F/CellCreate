@@ -40,6 +40,8 @@ namespace cc
         virtual FError CurrentCommandList(void** out) noexcept = 0;
 
         virtual FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept = 0;
+        // out 是 D3D12_CPU_DESCRIPTOR_HANDLE*
+        virtual FError CurrentFrameRtv(FRenderingContext* ctx, void** out) noexcept = 0;
     };
 
     struct FRenderingContext : IObject, FGpuConsts

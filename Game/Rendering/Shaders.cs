@@ -38,6 +38,8 @@ public record Shader(string Path, Guid Id)
 
 public record ShaderPass(string Name, ShaderStages Stages)
 {
+    public Shader Shader { get; internal set; } = null!;
+    internal ShaderStateModel States;
     public int Index { get; internal set; }
     public ShaderModule? Cs { get; internal set; }
     public ShaderModule? Ps { get; internal set; }
@@ -53,6 +55,17 @@ public record ShaderPass(string Name, ShaderStages Stages)
     public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
 
     #endregion
+
+    internal Dictionary<PipelineStateIndex, ShaderPipeline> PipelineStates { get; } = new();
+
+    public ShaderPipeline GetOrCreatePipelineState(PipelineStateIndex index)
+    {
+        if (PipelineStates.TryGetValue(index, out var pipelineState)) return pipelineState;
+        if ((Stages & ShaderStages.Cs) != 0) throw new NotImplementedException("todo");
+        else pipelineState = new GraphicsShaderPipeline(this);
+        PipelineStates[index] = pipelineState;
+        return pipelineState;
+    }
 }
 
 public record ShaderModule(ShaderStage Stage, byte[] Blob, ShaderMeta Meta)
@@ -133,6 +146,11 @@ public static class Shaders
         }
 
         var r = new Shader(path, id) { Passes = passes, NameToPass = by_name };
+        
+        foreach (var pass in passes)
+        {
+            pass.Shader = r;
+        }
 
         Log.Information("Shader [\"{Shader}\"] loaded", path);
 
@@ -159,7 +177,7 @@ public static class Shaders
             };
         }
 
-        var r = new ShaderPass(name, stages);
+        var r = new ShaderPass(name, stages) { States = pass.States };
 
         foreach (var module in modules)
         {

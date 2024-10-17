@@ -3,8 +3,10 @@
 #include <ranges>
 #include <dxgi1_6.h>
 #include <directxtk12/DirectXHelpers.h>
+#include <directx/d3dx12_pipeline_state_stream.h>
 
 #include "../utils/error.h"
+#include "./gpu_convert.h"
 
 using namespace cc;
 
@@ -336,8 +338,13 @@ FError Rendering::MakeContext(FWindowHandle* window_handle, FRenderingContext** 
 
 FError Rendering::CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept
 {
-    // todo
-    return FError::None();
+    return ferr_back(
+        [&]
+        {
+            Rc r = new GraphicsShaderPipeline(this->CloneThis(), pass);
+            *out = r.leak();
+        }
+    );
 }
 
 void Rendering::WaitAll() const
@@ -433,6 +440,8 @@ FError Rendering::ReadyFrame() noexcept
             {
                 const auto descriptor_heaps = m_descriptors->CurrentHeaps(m_state._frame_index);
                 m_current_command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
+                m_current_command_list->SetGraphicsRootSignature(m_bind_less_root_signature.get());
+                m_current_command_list->SetComputeRootSignature(m_bind_less_root_signature.get());
             }
 
             for (const auto& context : m_contexts | std::views::values)
@@ -494,6 +503,18 @@ FError Rendering::ClearSurface(FRenderingContext* ctx, float4 color) noexcept
             m_current_command_list->ClearRenderTargetView(
                 context->m_current_cpu_handle, reinterpret_cast<FLOAT*>(&color), 0, nullptr
             );
+        }
+    );
+}
+
+FError Rendering::CurrentFrameRtv(FRenderingContext* ctx, void** out) noexcept
+{
+    if (!m_state._on_recording) return FError::Common(str16(u"Frame not started"));
+    return ferr_back(
+        [&]
+        {
+            const auto* context = static_cast<RenderingContext*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
+            *out = reinterpret_cast<void*>(context->m_current_cpu_handle.ptr);
         }
     );
 }
@@ -766,4 +787,99 @@ void DescriptorSet::ReadyFrame()
 {
     m_heap_resource.ReadyFrame();
     m_heap_sampler.ReadyFrame();
+}
+
+namespace
+{
+    void set_state(auto& desc, const auto& state)
+    {
+        to_dx(desc.BlendState, state.blend_state, state.rt_count);
+        desc.SampleMask = state.sample_mask;
+        to_dx(desc.RasterizerState, state.rasterizer_state);
+        to_dx(desc.DepthStencilState, state.depth_stencil_state);
+        desc.PrimitiveTopologyType = to_dx_t(state.primitive_topology);
+        desc.NumRenderTargets = state.rt_count;
+        desc.SampleDesc.Count = state.sample_state.count;
+        desc.SampleDesc.Quality = state.sample_state.quality;
+        for (int i = 0; i < state.rt_count; ++i)
+        {
+            desc.RTVFormats[i] = to_dx(state.rtv_formats[i]);
+        }
+        desc.DSVFormat = to_dx(state.dsv_format);
+    }
+}
+
+GraphicsShaderPipeline::GraphicsShaderPipeline(Rc<Rendering>&& rendering, FShaderPassData* pass) : m_rendering(
+    std::move(rendering)
+), m_state(pass->state)
+{
+    CD3DX12_PIPELINE_STATE_STREAM2 stream{};
+    D3D12_INPUT_ELEMENT_DESC input_elements{};
+
+    if (pass->stages.vs)
+    {
+        m_is_mesh_shader = false;
+
+        const auto& ps = pass->modules[0];
+        const auto& vs = pass->modules[1];
+
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
+        desc.pRootSignature = m_rendering->m_bind_less_root_signature.get();
+        desc.PS = {ps.data(), ps.size()};
+        desc.VS = {vs.data(), vs.size()};
+
+        set_state(desc, m_state);
+
+        // todo 反射
+
+        // desc.InputLayout.NumElements = 1;
+        // desc.InputLayout.pInputElementDescs = &input_elements;
+        //
+        // input_elements.SemanticName = "POSITION";
+        // input_elements.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        // input_elements.SemanticIndex = 0;
+        // input_elements.InputSlot = 0;
+        // input_elements.AlignedByteOffset = 0;
+        // input_elements.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        // input_elements.InstanceDataStepRate = 0;
+
+        stream = CD3DX12_PIPELINE_STATE_STREAM2(desc);
+    }
+    else if (pass->stages.ms)
+    {
+        m_is_mesh_shader = true;
+
+        const auto& ps = pass->modules[0];
+        const auto& ms = pass->modules[1];
+        const auto& ts = pass->stages.ts ? pass->modules[2] : FrBlob(nullptr, 0);
+
+        D3DX12_MESH_SHADER_PIPELINE_STATE_DESC desc{};
+        desc.pRootSignature = m_rendering->m_bind_less_root_signature.get();
+        desc.PS = {ps.data(), ps.size()};
+        desc.MS = {ms.data(), ms.size()};
+        if (pass->stages.ts) desc.AS = {ts.data(), ts.size()};
+
+        set_state(desc, m_state);
+
+        stream = CD3DX12_PIPELINE_STATE_STREAM2(desc);
+    }
+    else throw CcError("Missing vertex or mesh shader");
+
+    D3D12_PIPELINE_STATE_STREAM_DESC stream_desc;
+    stream_desc.pPipelineStateSubobjectStream = &stream;
+    stream_desc.SizeInBytes = sizeof(stream);
+
+    check_error << m_rendering->m_device->CreatePipelineState(&stream_desc, RT_IID_PPV_ARGS(m_pipeline_state));
+}
+
+FError GraphicsShaderPipeline::RawPtr(void** out) const noexcept
+{
+    *out = m_pipeline_state.get();
+    return FError::None();
+}
+
+FError GraphicsShaderPipeline::StatePtr(const GraphicsPipelineState** out) const noexcept
+{
+    *out = &m_state;
+    return FError::None();
 }

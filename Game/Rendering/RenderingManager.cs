@@ -75,4 +75,11 @@ public sealed unsafe partial class RenderingManager
     }
 
     public void ClearSurface(RenderingContext ctx, float4 color) => m_ptr->ClearSurface(ctx.m_ptr, color).TryThrow();
+
+    public CpuDescriptorHandle CurrentFrameRtv(RenderingContext ctx)
+    {
+        CpuDescriptorHandle handle;
+        m_ptr->CurrentFrameRtv(ctx.m_ptr, (void**)&handle).TryThrow();
+        return handle;
+    }
 }

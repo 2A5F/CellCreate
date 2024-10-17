@@ -7,34 +7,6 @@
 
 namespace cc
 {
-
-    enum class ShaderStage : uint8_t
-    {
-        Unknown,
-        Cs,
-        Ps,
-        Vs,
-        Ms,
-        Ts,
-    };
-
-    struct FShaderStages
-    {
-        uint8_t cs : 1;
-        uint8_t vs : 1;
-        uint8_t ps : 1;
-        uint8_t ms : 1;
-        uint8_t ts : 1;
-    };
-
-    struct FShaderPassData
-    {
-        constexpr static size_t MaxModules = 3;
-
-        FrBlob modules[MaxModules];
-        FShaderStages stages;
-    };
-
     // 语义化的 bool 值
     enum class Switch : uint8_t
     {
@@ -282,6 +254,34 @@ namespace cc
         SampleState sample_state{};
     };
 
+    enum class ShaderStage : uint8_t
+    {
+        Unknown,
+        Cs,
+        Ps,
+        Vs,
+        Ms,
+        Ts,
+    };
+
+    struct FShaderStages
+    {
+        uint8_t cs : 1;
+        uint8_t ps : 1;
+        uint8_t vs : 1;
+        uint8_t ms : 1;
+        uint8_t ts : 1;
+    };
+
+    struct FShaderPassData
+    {
+        constexpr static size_t MaxModules = 3;
+
+        GraphicsPipelineState state;
+        FrBlob modules[MaxModules];
+        FShaderStages stages;
+    };
+
     struct FShaderPipeline : IObject
     {
         IMPL_INTERFACE("148fe4f0-51ad-464d-ad39-b8b06bc359af", IObject);
@@ -294,6 +294,6 @@ namespace cc
     {
         IMPL_INTERFACE("3fa74850-cdd9-47eb-8ae3-bfc090f7077a", FShaderPipeline);
 
-        virtual FError StatePtr(GraphicsPipelineState** out) const noexcept = 0;
+        virtual FError StatePtr(const GraphicsPipelineState** out) const noexcept = 0;
     };
 }

@@ -774,6 +774,14 @@ namespace Game.Native
             FError result;
             return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, float4, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CurrentFrameRtv([NativeTypeName("cc::FRenderingContext *")] FRenderingContext* ctx, void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, void**, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
+        }
     }
 
     [NativeTypeName("struct FRenderingContext : cc::IObject, cc::FGpuConsts")]
@@ -858,120 +866,6 @@ namespace Game.Native
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FRenderingContext*, FError*, uint2, FError*>)(lpVtbl[10]))((FRenderingContext*)Unsafe.AsPointer(ref this), &result, size);
-        }
-    }
-
-    [NativeTypeName("uint8_t")]
-    public enum ShaderStage : byte
-    {
-        Unknown,
-        Cs,
-        Ps,
-        Vs,
-        Ms,
-        Ts,
-    }
-
-    public partial struct FShaderStages
-    {
-        public byte _bitfield;
-
-        [NativeTypeName("uint8_t : 1")]
-        public byte cs
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                return (byte)(_bitfield & 0x1u);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bitfield = (byte)((_bitfield & ~0x1u) | (value & 0x1u));
-            }
-        }
-
-        [NativeTypeName("uint8_t : 1")]
-        public byte vs
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                return (byte)((_bitfield >> 1) & 0x1u);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bitfield = (byte)((_bitfield & ~(0x1u << 1)) | ((value & 0x1u) << 1));
-            }
-        }
-
-        [NativeTypeName("uint8_t : 1")]
-        public byte ps
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                return (byte)((_bitfield >> 2) & 0x1u);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bitfield = (byte)((_bitfield & ~(0x1u << 2)) | ((value & 0x1u) << 2));
-            }
-        }
-
-        [NativeTypeName("uint8_t : 1")]
-        public byte ms
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                return (byte)((_bitfield >> 3) & 0x1u);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bitfield = (byte)((_bitfield & ~(0x1u << 3)) | ((value & 0x1u) << 3));
-            }
-        }
-
-        [NativeTypeName("uint8_t : 1")]
-        public byte ts
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                return (byte)((_bitfield >> 4) & 0x1u);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bitfield = (byte)((_bitfield & ~(0x1u << 4)) | ((value & 0x1u) << 4));
-            }
-        }
-    }
-
-    public partial struct FShaderPassData
-    {
-        [NativeTypeName("FrBlob[3]")]
-        public _modules_e__FixedBuffer modules;
-
-        [NativeTypeName("cc::FShaderStages")]
-        public FShaderStages stages;
-
-        [NativeTypeName("const size_t")]
-        public const nuint MaxModules = 3;
-
-        [InlineArray(3)]
-        public partial struct _modules_e__FixedBuffer
-        {
-            public FrBlob e0;
         }
     }
 
@@ -1366,6 +1260,123 @@ namespace Game.Native
         }
     }
 
+    [NativeTypeName("uint8_t")]
+    public enum ShaderStage : byte
+    {
+        Unknown,
+        Cs,
+        Ps,
+        Vs,
+        Ms,
+        Ts,
+    }
+
+    public partial struct FShaderStages
+    {
+        public byte _bitfield;
+
+        [NativeTypeName("uint8_t : 1")]
+        public byte cs
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                return (byte)(_bitfield & 0x1u);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                _bitfield = (byte)((_bitfield & ~0x1u) | (value & 0x1u));
+            }
+        }
+
+        [NativeTypeName("uint8_t : 1")]
+        public byte ps
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                return (byte)((_bitfield >> 1) & 0x1u);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                _bitfield = (byte)((_bitfield & ~(0x1u << 1)) | ((value & 0x1u) << 1));
+            }
+        }
+
+        [NativeTypeName("uint8_t : 1")]
+        public byte vs
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                return (byte)((_bitfield >> 2) & 0x1u);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                _bitfield = (byte)((_bitfield & ~(0x1u << 2)) | ((value & 0x1u) << 2));
+            }
+        }
+
+        [NativeTypeName("uint8_t : 1")]
+        public byte ms
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                return (byte)((_bitfield >> 3) & 0x1u);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                _bitfield = (byte)((_bitfield & ~(0x1u << 3)) | ((value & 0x1u) << 3));
+            }
+        }
+
+        [NativeTypeName("uint8_t : 1")]
+        public byte ts
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                return (byte)((_bitfield >> 4) & 0x1u);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                _bitfield = (byte)((_bitfield & ~(0x1u << 4)) | ((value & 0x1u) << 4));
+            }
+        }
+    }
+
+    public partial struct FShaderPassData
+    {
+        [NativeTypeName("cc::GraphicsPipelineState")]
+        public GraphicsPipelineState state;
+
+        [NativeTypeName("FrBlob[3]")]
+        public _modules_e__FixedBuffer modules;
+
+        [NativeTypeName("cc::FShaderStages")]
+        public FShaderStages stages;
+
+        [NativeTypeName("const size_t")]
+        public const nuint MaxModules = 3;
+
+        [InlineArray(3)]
+        public partial struct _modules_e__FixedBuffer
+        {
+            public FrBlob e0;
+        }
+    }
+
     [NativeTypeName("struct FShaderPipeline : cc::IObject")]
     public unsafe partial struct FShaderPipeline
     {
@@ -1521,7 +1532,7 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError StatePtr(GraphicsPipelineState** @out)
+        public FError StatePtr([NativeTypeName("const GraphicsPipelineState **")] GraphicsPipelineState** @out)
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FGraphicsShaderPipeline*, FError*, GraphicsPipelineState**, FError*>)(lpVtbl[10]))((FGraphicsShaderPipeline*)Unsafe.AsPointer(ref this), &result, @out);

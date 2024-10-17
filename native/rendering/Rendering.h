@@ -79,7 +79,7 @@ namespace cc
         FError CurrentCommandList(void** out) noexcept override;
 
         FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept override;
-
+        FError CurrentFrameRtv(FRenderingContext* ctx, void** out) noexcept override;
     };
 
     class Queue final : public FGpuConsts
@@ -176,5 +176,21 @@ namespace cc
         std::array<ID3D12DescriptorHeap*, 2> CurrentHeaps(UINT32 frame) const;
 
         void ReadyFrame();
+    };
+
+    class GraphicsShaderPipeline final : public Object<FGraphicsShaderPipeline>
+    {
+        IMPL_OBJECT();
+
+    public:
+        Rc<Rendering> m_rendering;
+        ComPtr<ID3D12PipelineState> m_pipeline_state{};
+        GraphicsPipelineState m_state{};
+        bool m_is_mesh_shader{};
+
+        explicit GraphicsShaderPipeline(Rc<Rendering>&& rendering, FShaderPassData* pass);
+
+        FError RawPtr(void** out) const noexcept override;
+        FError StatePtr(const GraphicsPipelineState** out) const noexcept override;
     };
 } // cc

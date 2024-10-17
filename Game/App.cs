@@ -3,6 +3,9 @@ using Game.Native;
 using Game.Rendering;
 using Game.Utilities;
 using Game.Windowing;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D12;
+using Silk.NET.Maths;
 
 namespace Game;
 
@@ -35,14 +38,32 @@ public static class App
         Rendering.MakeContext(Window);
         await TaskUtils.SwitchToLongRunning();
 
-        var shader_ui_rect = Shaders.TryGetShader("ui/ui")!;
-        
+        var shader_ui_rect = Shaders.TryGetShader("ui/ui")!["rect"];
+        var pipeline_ui_rect =
+            shader_ui_rect.GetOrCreatePipelineState(
+                new(TextureFormat.D24_UNorm_S8_UInt, [TextureFormat.R8G8B8A8_UNorm]));
+
         while (Vars.running)
         {
             Rendering.ReadyFrame();
             Rendering.ClearSurface(Window.Context!, new(1, 1, 1, 1));
 
+            Draw(pipeline_ui_rect);
+
             Rendering.EndFrame();
         }
+    }
+
+    internal static unsafe void Draw(ShaderPipeline pipeline_state)
+    {
+        var size = Window.PixelSize;
+        var frame = Rendering.CurrentFrameRtv(Window.Context!);
+        var cmd_list = Rendering.CurrentCommandList;
+        cmd_list->OMSetRenderTargets(1, &frame, false, null);
+        cmd_list->RSSetViewports(1, new Viewport(0, 0, size.x, size.y, 0, 1));
+        cmd_list->RSSetScissorRects(1, new Box2D<int>(0, 0, (int)size.x, (int)size.y));
+        cmd_list->IASetPrimitiveTopology(D3DPrimitiveTopology.D3DPrimitiveTopologyTrianglestrip);
+        cmd_list->SetPipelineState(pipeline_state.RawPtr);
+        cmd_list->DrawInstanced(4, 1, 0, 0);
     }
 }
