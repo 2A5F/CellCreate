@@ -56,9 +56,9 @@ public record ShaderPass(string Name, ShaderStages Stages)
 
     #endregion
 
-    internal Dictionary<PipelineStateIndex, ShaderPipeline> PipelineStates { get; } = new();
+    internal Dictionary<PipelineRtInfo, ShaderPipeline> PipelineStates { get; } = new();
 
-    public ShaderPipeline GetOrCreatePipelineState(PipelineStateIndex index)
+    public ShaderPipeline GetOrCreatePipelineState(PipelineRtInfo index)
     {
         if (PipelineStates.TryGetValue(index, out var pipelineState)) return pipelineState;
         if ((Stages & ShaderStages.Cs) != 0) throw new NotImplementedException("todo");

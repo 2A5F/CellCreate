@@ -17,6 +17,8 @@
         <PackageReference Include="Coplt.Mathematics" Version="0.3.0"/>
         <PackageReference Include="Coplt.RAII" Version="0.1.0"/>
         <PackageReference Include="Coplt.ShaderReflections" Version="0.1.0"/>
+        <PackageReference Include="Flecs.NET.Debug" Version="4.0.2" Condition="'$(Configuration)' == 'Debug'"/>
+        <PackageReference Include="Flecs.NET.Release" Version="4.0.2" Condition="'$(Configuration)' != 'Debug'"/>
         <PackageReference Include="Fody" Version="6.8.2">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -30,7 +32,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
         <PackageReference Include="SharpZipLib" Version="1.4.2"/>
-        <PackageReference Include="Silk.NET.Direct3D12" Version="2.21.0" />
+        <PackageReference Include="Silk.NET.Direct3D12" Version="2.21.0"/>
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
     </ItemGroup>
 

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Game.Native;
+﻿using Game.Native;
 using Game.Rendering;
 using Game.Utilities;
 using Game.Windowing;

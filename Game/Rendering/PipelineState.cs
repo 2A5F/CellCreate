@@ -9,17 +9,17 @@ using Silk.NET.Direct3D12;
 
 namespace Game.Rendering;
 
-public record struct PipelineStateIndex
+public record struct PipelineRtInfo
 {
     public TextureFormat Dsv;
     public RtvArray Rtvs;
     public byte RtvCount;
 
-    public PipelineStateIndex() : this(TextureFormat.D24_UNorm_S8_UInt, [TextureFormat.R8G8B8A8_UNorm]) { }
+    public PipelineRtInfo() : this(TextureFormat.D24_UNorm_S8_UInt, [TextureFormat.R8G8B8A8_UNorm]) { }
 
-    internal PipelineStateIndex(in ShaderStateModel state) : this() { } // todo state
+    internal PipelineRtInfo(in ShaderStateModel state) : this() { } // todo state
 
-    public PipelineStateIndex(TextureFormat dsv, ReadOnlySpan<TextureFormat> rtvs)
+    public PipelineRtInfo(TextureFormat dsv, ReadOnlySpan<TextureFormat> rtvs)
     {
         Dsv = dsv;
         RtvCount = (byte)rtvs.Length;
@@ -39,7 +39,7 @@ public record struct PipelineStateIndex
         private TextureFormat _;
     }
 
-    public readonly bool Equals(PipelineStateIndex other)
+    public readonly bool Equals(PipelineRtInfo other)
     {
         return Dsv == other.Dsv && RtvCount == other.RtvCount && RtvReadonlySpan.SequenceEqual(other.RtvReadonlySpan);
     }
@@ -74,8 +74,8 @@ public sealed unsafe partial class GraphicsShaderPipeline : ShaderPipeline
     public ref readonly GraphicsPipelineState State => ref *m_state;
 
     internal GraphicsShaderPipeline(ShaderPass pass) : this(pass, in pass.States, new(in pass.States)) { }
-    internal GraphicsShaderPipeline(ShaderPass pass, PipelineStateIndex index) : this(pass, in pass.States, index) { }
-    internal GraphicsShaderPipeline(ShaderPass pass, in ShaderStateModel States, PipelineStateIndex index)
+    internal GraphicsShaderPipeline(ShaderPass pass, PipelineRtInfo rtInfo) : this(pass, in pass.States, rtInfo) { }
+    internal GraphicsShaderPipeline(ShaderPass pass, in ShaderStateModel States, PipelineRtInfo rtInfo)
     {
         if ((pass.Stages & ShaderStages.Cs) != 0)
             throw new ArgumentException("The graphics pipeline does not support the compute stage");
@@ -85,23 +85,30 @@ public sealed unsafe partial class GraphicsShaderPipeline : ShaderPipeline
             throw new ArgumentException("Missing vertex or mesh stage");
 
         FShaderPassData pass_data;
-        m_ptr = CreateStage0(&pass_data, pass, in States);
+        m_ptr = CreateStage0(&pass_data, pass, in States, rtInfo);
 
         GraphicsPipelineState* p_state;
         m_ptr->StatePtr(&p_state).TryThrow();
         m_state = p_state;
 
         if (App.Vars.debug)
-            Log.Debug("Created pipeline state of shader pass [\"{Shader}\"::\"{Pass}\"] with {State}",
-                pass.Shader.Path, pass.Name, index);
+            Log.Debug("Created pipeline state of shader pass [\"{Shader}\"::\"{Pass}\"] with {RtInfo}",
+                pass.Shader.Path, pass.Name, rtInfo);
 
         // set state
         static FGraphicsShaderPipeline* CreateStage0(FShaderPassData* pass_data, ShaderPass pass,
-            in ShaderStateModel States)
+            in ShaderStateModel States, PipelineRtInfo rtInfo)
         {
             ref readonly var states = ref States;
             var state = &pass_data->state;
             *state = new();
+
+            state->rt_count = rtInfo.RtvCount;
+            state->dsv_format = rtInfo.Dsv;
+            for (var i = 0; i < rtInfo.RtvCount; i++)
+            {
+                state->rtv_formats[i] = rtInfo.Rtvs[i];
+            }
 
             // todo other state
 
