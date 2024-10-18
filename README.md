@@ -10,7 +10,7 @@ A factory game
   - dx12.2 gpu
   - windows 11
   - pwsh 7
-  - clang (c++ 23)
+  - cmake, ninja, clang (c++ 23)
   - vcpkg
   - .net 8 sdk
   - [ClangSharpPInvokeGenerator](https://github.com/dotnet/ClangSharp)
