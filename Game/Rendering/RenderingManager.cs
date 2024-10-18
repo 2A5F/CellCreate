@@ -14,12 +14,15 @@ public sealed unsafe partial class RenderingManager
     internal FRendering* m_ptr;
     internal readonly FRenderingState* m_state;
 
+    public RenderGraph Graph { get; }
+
     internal RenderingManager()
     {
         FRendering* ptr;
         App.s_native_app->CreateRendering(&ptr).TryThrow();
         m_ptr = ptr;
         m_state = m_ptr->StatePtr();
+        Graph = new() { Rendering = this };
     }
 
     [Drop]
@@ -41,6 +44,20 @@ public sealed unsafe partial class RenderingManager
             window.Context = ctx;
             return ctx;
         }, (window, this));
+
+    public GpuBuffer CreateBuffer(GpuBuffer.Options options)
+    {
+        FGpuBuffer* ptr;
+        FGpuBufferCreateOptions f_options = new()
+        {
+            size = options.Size,
+            initial_state = Unsafe.BitCast<GpuResourceState, FGpuResourceState>(options.InitialState),
+            heap_type = options.HeapType,
+            uav = options.Uav,
+        };
+        m_ptr->CreateBuffer(&f_options, &ptr).TryThrow();
+        return new(ptr);
+    }
 
     public bool VSync
     {

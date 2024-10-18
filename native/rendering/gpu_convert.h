@@ -1,10 +1,13 @@
 #pragma once
 #include <directx/d3d12.h>
 
+#include "../ffi/Rendering.h"
 #include "../ffi/Shader.h"
 
 namespace cc
 {
+    D3D12_RESOURCE_STATES to_dx(FGpuResourceState state);
+
     D3D12_BLEND to_dx(BlendType type);
 
     D3D12_BLEND_OP to_dx(BlendOp op);
@@ -34,4 +37,6 @@ namespace cc
     D3D12_PRIMITIVE_TOPOLOGY to_dx(PrimitiveTopologyType topology);
 
     DXGI_FORMAT to_dx(TextureFormat format);
+
+    D3D12_HEAP_TYPE to_dx(GpuHeapType type);
 }

@@ -28,4 +28,6 @@ public sealed unsafe partial class RenderingContext
     }
 
     public void OnResize(uint2 new_size) => m_ptr->OnResize(new_size).TryThrow();
+    
+    public uint2 PixelSize => WindowHandle.PixelSize;
 }

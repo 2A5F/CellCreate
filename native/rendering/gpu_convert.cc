@@ -2,6 +2,11 @@
 
 using namespace cc;
 
+D3D12_RESOURCE_STATES cc::to_dx(FGpuResourceState state)
+{
+    return static_cast<D3D12_RESOURCE_STATES>(state);
+}
+
 D3D12_BLEND cc::to_dx(const BlendType type)
 {
     switch (type)
@@ -490,5 +495,20 @@ DXGI_FORMAT cc::to_dx(const TextureFormat format)
     case TextureFormat::Unknown:
     default:
         return DXGI_FORMAT_UNKNOWN;
+    }
+}
+
+D3D12_HEAP_TYPE cc::to_dx(GpuHeapType type)
+{
+    switch (type)
+    {
+    case GpuHeapType::Gpu:
+        return D3D12_HEAP_TYPE_DEFAULT;
+    case GpuHeapType::Upload:
+        return D3D12_HEAP_TYPE_UPLOAD;
+    case GpuHeapType::ReadBack:
+        return D3D12_HEAP_TYPE_READBACK;
+    default: ;
+        return D3D12_HEAP_TYPE_DEFAULT;
     }
 }

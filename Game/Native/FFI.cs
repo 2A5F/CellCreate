@@ -737,15 +737,15 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError ReadyFrame()
+        public FError CreateBuffer([NativeTypeName("const FGpuBufferCreateOptions *")] FGpuBufferCreateOptions* options, FGpuBuffer** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuBufferCreateOptions*, FGpuBuffer**, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, options, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError EndFrame()
+        public FError ReadyFrame()
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result);
@@ -753,15 +753,15 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError GetDevice(void** @out)
+        public FError EndFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError CurrentCommandList(void** @out)
+        public FError GetDevice(void** @out)
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[15]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
@@ -769,10 +769,18 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
+        public FError CurrentCommandList(void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
         public FError ClearSurface([NativeTypeName("cc::FRenderingContext *")] FRenderingContext* ctx, [NativeTypeName("cc::float4")] float4 color)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, float4, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, float4, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -780,7 +788,7 @@ namespace Game.Native
         public FError CurrentFrameRtv([NativeTypeName("cc::FRenderingContext *")] FRenderingContext* ctx, void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, void**, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, void**, FError*>)(lpVtbl[18]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
         }
     }
 
@@ -867,6 +875,336 @@ namespace Game.Native
             FError result;
             return *((delegate* unmanaged[Thiscall]<FRenderingContext*, FError*, uint2, FError*>)(lpVtbl[10]))((FRenderingContext*)Unsafe.AsPointer(ref this), &result, size);
         }
+    }
+
+    public enum GpuHeapType
+    {
+        Gpu,
+        Upload,
+        ReadBack,
+    }
+
+    public enum FGpuResourceState
+    {
+        Common = 0x0,
+        VertexAndConstantBuffer = 0x1,
+        IndexBuffer = 0x2,
+        RenderTarget = 0x4,
+        UnorderedAccess = 0x8,
+        DepthWrite = 0x10,
+        DepthRead = 0x20,
+        NonPixel = 0x40,
+        Pixel = 0x80,
+        StreamOut = 0x100,
+        IndirectArgument = 0x200,
+        CopyDst = 0x400,
+        CopySrc = 0x800,
+        ResolveDst = 0x1000,
+        ResolveSrc = 0x2000,
+        RayTracingAccelerationStructure = 0x400000,
+        ShadingRateSrc = 0x1000000,
+        AllShaderResource = Pixel | NonPixel,
+        GenericRead = VertexAndConstantBuffer | IndexBuffer | AllShaderResource | IndirectArgument | CopySrc,
+    }
+
+    public partial struct FGpuResourceData
+    {
+        [NativeTypeName("cc::FGpuResourceState")]
+        public FGpuResourceState state;
+    }
+
+    [NativeTypeName("struct FGpuResource : cc::IObject, cc::FGpuConsts")]
+    public unsafe partial struct FGpuResource
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "dc3ca943-ad5e-4150-bfe8-b5bc12f3285d";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FGpuResource*, void>)(lpVtbl[0]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, nuint>)(lpVtbl[1]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, nuint>)(lpVtbl[2]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, nuint>)(lpVtbl[3]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, nuint>)(lpVtbl[4]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, B8>)(lpVtbl[5]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, B8>)(lpVtbl[6]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, void*>)(lpVtbl[7]))((FGpuResource*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuResource*, Guid, void*>)(lpVtbl[8]))((FGpuResource*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError RawPtr(void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuResource*, FError*, void**, FError*>)(lpVtbl[9]))((FGpuResource*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError DataPtr(FGpuResourceData** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuResource*, FError*, FGpuResourceData**, FError*>)(lpVtbl[10]))((FGpuResource*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError SetName([NativeTypeName("const wchar_t *")] char* name)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuResource*, FError*, char*, FError*>)(lpVtbl[11]))((FGpuResource*)Unsafe.AsPointer(ref this), &result, name);
+        }
+    }
+
+    [NativeTypeName("struct FGpuBuffer : cc::FGpuResource")]
+    public unsafe partial struct FGpuBuffer
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "01d2e268-62c6-4175-855f-88c9ac5f2f86";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FGpuBuffer*, void>)(lpVtbl[0]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, nuint>)(lpVtbl[1]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, nuint>)(lpVtbl[2]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, nuint>)(lpVtbl[3]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, nuint>)(lpVtbl[4]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, B8>)(lpVtbl[5]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, B8>)(lpVtbl[6]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, void*>)(lpVtbl[7]))((FGpuBuffer*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuBuffer*, Guid, void*>)(lpVtbl[8]))((FGpuBuffer*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError RawPtr(void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuBuffer*, FError*, void**, FError*>)(lpVtbl[9]))((FGpuBuffer*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError DataPtr(FGpuResourceData** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuBuffer*, FError*, FGpuResourceData**, FError*>)(lpVtbl[10]))((FGpuBuffer*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError SetName([NativeTypeName("const wchar_t *")] char* name)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuBuffer*, FError*, char*, FError*>)(lpVtbl[11]))((FGpuBuffer*)Unsafe.AsPointer(ref this), &result, name);
+        }
+    }
+
+    [NativeTypeName("struct FGpuTexture : cc::FGpuResource")]
+    public unsafe partial struct FGpuTexture
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "7af4b0c3-13dd-4897-b807-81253c4a3e2e";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FGpuTexture*, void>)(lpVtbl[0]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, nuint>)(lpVtbl[1]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, nuint>)(lpVtbl[2]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, nuint>)(lpVtbl[3]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, nuint>)(lpVtbl[4]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, B8>)(lpVtbl[5]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, B8>)(lpVtbl[6]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, void*>)(lpVtbl[7]))((FGpuTexture*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuTexture*, Guid, void*>)(lpVtbl[8]))((FGpuTexture*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError RawPtr(void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuTexture*, FError*, void**, FError*>)(lpVtbl[9]))((FGpuTexture*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError DataPtr(FGpuResourceData** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuTexture*, FError*, FGpuResourceData**, FError*>)(lpVtbl[10]))((FGpuTexture*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError SetName([NativeTypeName("const wchar_t *")] char* name)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuTexture*, FError*, char*, FError*>)(lpVtbl[11]))((FGpuTexture*)Unsafe.AsPointer(ref this), &result, name);
+        }
+    }
+
+    public partial struct FGpuBufferCreateOptions
+    {
+        [NativeTypeName("cc::u32")]
+        public uint size;
+
+        [NativeTypeName("cc::FGpuResourceState")]
+        public FGpuResourceState initial_state;
+
+        [NativeTypeName("cc::GpuHeapType")]
+        public GpuHeapType heap_type;
+
+        [NativeTypeName("cc::b8")]
+        public B8 uav;
     }
 
     [NativeTypeName("uint8_t")]

@@ -71,6 +71,7 @@ namespace cc
         FError MakeContext(FWindowHandle* window_handle, FRenderingContext** out) noexcept override;
 
         FError CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept override;
+        FError CreateBuffer(const FGpuBufferCreateOptions* options, FGpuBuffer** out) noexcept override;
 
         FError ReadyFrame() noexcept override;
         FError EndFrame() noexcept override;

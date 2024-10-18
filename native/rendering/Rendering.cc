@@ -7,6 +7,7 @@
 
 #include "../utils/error.h"
 #include "./gpu_convert.h"
+#include "GpuResource.h"
 
 using namespace cc;
 
@@ -342,6 +343,19 @@ FError Rendering::CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsS
         [&]
         {
             Rc r = new GraphicsShaderPipeline(this->CloneThis(), pass);
+            *out = r.leak();
+        }
+    );
+}
+
+FError Rendering::CreateBuffer(const FGpuBufferCreateOptions* options, FGpuBuffer** out) noexcept
+{
+    if (options == nullptr) return FError::Common(str16(u"options is null"));
+    if (options->size <= 0) return FError::Common(str16(u"size must > 0"));
+    return ferr_back(
+        [&]
+        {
+            Rc r = new GpuBuffer(this->CloneThis(), options);
             *out = r.leak();
         }
     );

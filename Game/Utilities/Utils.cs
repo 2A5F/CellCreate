@@ -2,7 +2,7 @@
 
 namespace Game.Utilities;
 
-public class Utils
+public static class Utils
 {
     public static string GetAsmVer(Assembly assembly)
     {
@@ -16,5 +16,11 @@ public class Utils
         {
             return assemblyVersionAttribute.InformationalVersion;
         }
+    }
+
+    public static V GetOrAdd<K, V>(this Dictionary<K, V> dict, K key, Func<K, V> factory) where K : notnull
+    {
+        if (dict.TryGetValue(key, out var value)) return value;
+        return dict[key] = factory(key);
     }
 }

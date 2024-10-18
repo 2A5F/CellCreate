@@ -44,17 +44,29 @@ public static class App
 
         while (Vars.running)
         {
-            Rendering.ReadyFrame();
-            Rendering.ClearSurface(Window.Context!, new(1, 1, 1, 1));
+            Rendering.Graph.BeginRecording(Window.Context!);
+            Rendering.ClearSurface(Window.Context!, new(0, 0, 0, 1));
 
             Draw(pipeline_ui_rect);
 
-            Rendering.EndFrame();
+            Rendering.Graph.EndRecordingAndExecute();
         }
+    }
+
+    internal class RenderData
+    {
+        public ShaderPipeline pipeline_state = null!;
     }
 
     internal static unsafe void Draw(ShaderPipeline pipeline_state)
     {
+        var builder = Rendering.Graph.AddPass("Foo", out RenderData data);
+        data.pipeline_state = pipeline_state;
+        builder.SetRenderFunc(static (ctx, data) =>
+        {
+            
+        });
+
         var size = Window.PixelSize;
         var frame = Rendering.CurrentFrameRtv(Window.Context!);
         var cmd_list = Rendering.CurrentCommandList;
