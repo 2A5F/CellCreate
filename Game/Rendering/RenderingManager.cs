@@ -32,16 +32,16 @@ public sealed unsafe partial class RenderingManager
         ptr->Release();
     }
 
-    internal readonly ConcurrentDictionary<WindowHandle, RenderingContext> RenderingContexts = new();
+    internal readonly ConcurrentDictionary<WindowHandle, GraphicSurface> RenderingContexts = new();
 
-    internal RenderingContext MakeContext(Window window) => RenderingContexts.GetOrAdd(window.Handle,
+    internal GraphicSurface MakeContext(Window window) => RenderingContexts.GetOrAdd(window.Handle,
         static (Handle, data) =>
         {
             var (window, self) = data;
             FRenderingContext* ptr;
             self.m_ptr->MakeContext(Handle.m_ptr, &ptr).TryThrow();
-            var ctx = new RenderingContext(ptr, self, Handle);
-            window.Context = ctx;
+            var ctx = new GraphicSurface(ptr, self, Handle);
+            window.Surface = ctx;
             return ctx;
         }, (window, this));
 
@@ -91,9 +91,9 @@ public sealed unsafe partial class RenderingManager
         }
     }
 
-    public void ClearSurface(RenderingContext ctx, float4 color) => m_ptr->ClearSurface(ctx.m_ptr, color).TryThrow();
+    public void ClearSurface(GraphicSurface ctx, float4 color) => m_ptr->ClearSurface(ctx.m_ptr, color).TryThrow();
 
-    public CpuDescriptorHandle CurrentFrameRtv(RenderingContext ctx)
+    public CpuDescriptorHandle CurrentFrameRtv(GraphicSurface ctx)
     {
         CpuDescriptorHandle handle;
         m_ptr->CurrentFrameRtv(ctx.m_ptr, (void**)&handle).TryThrow();

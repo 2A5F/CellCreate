@@ -55,6 +55,11 @@ namespace cc
     public:
         explicit App() = default;
 
+        FError MemAlloc(size_t size, void** out) noexcept override;
+        FError MemFree(void* ptr) noexcept override;
+        FError MemReAlloc(void* ptr, size_t new_size, void** out) noexcept override;
+        FError MemFreeLinkedList(FLikeLinkedList* ptr) noexcept override;
+
         FError Init() noexcept override;
         FError Exit() noexcept override;
 

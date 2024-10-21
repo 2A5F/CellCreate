@@ -12,13 +12,13 @@ public sealed class Window
 
     internal WindowHandle Handle => m_handle ?? throw new NullReferenceException("The window was destroyed");
 
-    public RenderingContext? Context { get; internal set; }
+    public GraphicSurface? Surface { get; internal set; }
 
     public event Action<uint2>? OnResize;
 
     internal void Destroy()
     {
-        Context?.Destroy();
+        Surface?.Destroy();
         Handle.Dispose();
         m_handle = null;
     }
@@ -93,6 +93,6 @@ public sealed class Window
     {
         var new_size = Size;
         OnResize?.Invoke(new_size);
-        Context?.OnResize(new_size);
+        Surface?.OnResize(new_size);
     }
 }

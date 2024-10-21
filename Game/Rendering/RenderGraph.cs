@@ -11,7 +11,7 @@ public sealed class RenderGraph
 
     private readonly List<Pass> passes = new();
 
-    private RenderingContext RenderingContext = null!;
+    private GraphicSurface Surface = null!;
     private FramedData FramedData = new();
 
     internal class Pass
@@ -30,14 +30,14 @@ public sealed class RenderGraph
         }
     }
 
-    public void BeginRecording(RenderingContext context)
+    public void BeginRecording(GraphicSurface surface)
     {
-        RenderingContext = context;
+        Surface = surface;
 
         IsRecording = true;
         Rendering.ReadyFrame();
 
-        FramedData.SurfaceSize = context.PixelSize;
+        FramedData.SurfaceSize = surface.PixelSize;
     }
 
     public void EndRecordingAndExecute()
@@ -78,6 +78,14 @@ public struct PassBuilder<T>
     {
         Pass.RenderFunc = func;
     }
+
+    public PipelineHandle UsePipeline(Shader shader, int pass) => UsePipeline(shader[pass]);
+    public PipelineHandle UsePipeline(Shader shader, string pass) => UsePipeline(shader[pass]);
+    public PipelineHandle UsePipeline(ShaderPass pass)
+    {
+        // todo
+        return default;
+    }
 }
 
 public delegate void RenderGraphRenderFunc<in T>(RenderGraphContext ctx, T data);
@@ -89,7 +97,8 @@ internal delegate void RenderGraphExecRenderFunc(
 public ref struct RenderGraphContext
 {
     public RenderingManager Rendering;
-    public RenderingContext RenderingContext;
+    public GraphicSurface GraphicSurface;
+    public CommandBuffer cmd;
     public ref readonly FramedData FramedData;
 }
 
@@ -97,3 +106,9 @@ public struct FramedData
 {
     public uint2 SurfaceSize;
 }
+
+public record struct PipelineHandle(uint Id);
+
+public record struct TextureHandle(uint Id);
+
+public record struct BufferHandle(uint Id);

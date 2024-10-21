@@ -343,10 +343,42 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
+        public FError MemAlloc([NativeTypeName("size_t")] nuint size, void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, nuint, void**, FError*>)(lpVtbl[9]))((FApp*)Unsafe.AsPointer(ref this), &result, size, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError MemFree(void* ptr)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, void*, FError*>)(lpVtbl[10]))((FApp*)Unsafe.AsPointer(ref this), &result, ptr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError MemReAlloc(void* ptr, [NativeTypeName("size_t")] nuint new_size, void** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, void*, nuint, void**, FError*>)(lpVtbl[11]))((FApp*)Unsafe.AsPointer(ref this), &result, ptr, new_size, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError MemFreeLinkedList([NativeTypeName("cc::FLikeLinkedList *")] FLikeLinkedList* ptr)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FLikeLinkedList*, FError*>)(lpVtbl[12]))((FApp*)Unsafe.AsPointer(ref this), &result, ptr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
         public FError Init()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[9]))((FApp*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[13]))((FApp*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -354,14 +386,14 @@ namespace Game.Native
         public FError Exit()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[10]))((FApp*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[14]))((FApp*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FMessageVtb *")]
         public FMessageVtb* MsgVtb()
         {
-            return ((delegate* unmanaged[Thiscall]<FApp*, FMessageVtb*>)(lpVtbl[11]))((FApp*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FApp*, FMessageVtb*>)(lpVtbl[15]))((FApp*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -369,7 +401,7 @@ namespace Game.Native
         public FError MsgLoop()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[12]))((FApp*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FError*>)(lpVtbl[16]))((FApp*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -377,7 +409,7 @@ namespace Game.Native
         public FError SendMsg([NativeTypeName("cc::FMessage")] FMessage type, void* data)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FMessage, void*, FError*>)(lpVtbl[13]))((FApp*)Unsafe.AsPointer(ref this), &result, type, data);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FMessage, void*, FError*>)(lpVtbl[17]))((FApp*)Unsafe.AsPointer(ref this), &result, type, data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -385,7 +417,7 @@ namespace Game.Native
         public FError CreateWindowHandle([NativeTypeName("cc::FWindowCreateOptions &")] FWindowCreateOptions* options, [NativeTypeName("FWindowHandle *&")] FWindowHandle** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FWindowCreateOptions*, FWindowHandle**, FError*>)(lpVtbl[14]))((FApp*)Unsafe.AsPointer(ref this), &result, options, @out);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FWindowCreateOptions*, FWindowHandle**, FError*>)(lpVtbl[18]))((FApp*)Unsafe.AsPointer(ref this), &result, options, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -393,7 +425,7 @@ namespace Game.Native
         public FError CreateRendering([NativeTypeName("FRendering *&")] FRendering** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[15]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[19]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
     }
 
@@ -437,6 +469,12 @@ namespace Game.Native
     {
         [NativeTypeName("cc::AppFnVtb *")]
         public AppFnVtb* fn_vtb;
+    }
+
+    public unsafe partial struct FLikeLinkedList
+    {
+        [NativeTypeName("cc::FLikeLinkedList *")]
+        public FLikeLinkedList* next;
     }
 
     public enum FMessage
@@ -1205,6 +1243,165 @@ namespace Game.Native
 
         [NativeTypeName("cc::b8")]
         public B8 uav;
+    }
+
+    public partial struct FGpuGraphConsts
+    {
+        [NativeTypeName("const u32")]
+        public const uint NullViewId = 0;
+
+        [NativeTypeName("const u32")]
+        public const uint SurfaceRtvId = 0xffffffff - 1;
+    }
+
+    [NativeTypeName("cc::u8")]
+    public enum FGpuCommandOp : byte
+    {
+        Nop,
+        ClearRtv,
+        ClearDsv,
+        SetRt,
+        SetViewPort,
+        SetScissorRect,
+        SetPipeline,
+        DrawInstanced,
+        Dispatch,
+        DispatchMesh,
+    }
+
+    public partial struct FGpuCommandClearRtv
+    {
+        [NativeTypeName("cc::u32")]
+        public uint rtv;
+
+        [NativeTypeName("f32[4]")]
+        public _color_e__FixedBuffer color;
+
+        [NativeTypeName("cc::u32")]
+        public uint rects;
+
+        [InlineArray(4)]
+        public partial struct _color_e__FixedBuffer
+        {
+            public float e0;
+        }
+    }
+
+    public partial struct FGpuCommandClearDsv
+    {
+        [NativeTypeName("cc::u32")]
+        public uint dsv;
+
+        [NativeTypeName("__AnonymousRecord_Rendering_L174_C13")]
+        public _flags_e__Struct flags;
+
+        [NativeTypeName("cc::u8")]
+        public byte stencil;
+
+        [NativeTypeName("cc::f32")]
+        public float depth;
+
+        [NativeTypeName("cc::u32")]
+        public uint rects;
+
+        public partial struct _flags_e__Struct
+        {
+            public byte _bitfield;
+
+            [NativeTypeName("cc::u8 : 1")]
+            public byte depth
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                readonly get
+                {
+                    return (byte)(_bitfield & 0x1u);
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                set
+                {
+                    _bitfield = (byte)((_bitfield & ~0x1u) | (value & 0x1u));
+                }
+            }
+
+            [NativeTypeName("cc::u8 : 1")]
+            public byte stencil
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                readonly get
+                {
+                    return (byte)((_bitfield >> 1) & 0x1u);
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                set
+                {
+                    _bitfield = (byte)((_bitfield & ~(0x1u << 1)) | ((value & 0x1u) << 1));
+                }
+            }
+        }
+    }
+
+    public partial struct FGpuCommandSetRt
+    {
+        [NativeTypeName("cc::u32")]
+        public uint dsv;
+
+        [NativeTypeName("cc::u32")]
+        public uint rtv_count;
+    }
+
+    public partial struct FGpuCommandSetViewPort
+    {
+        [NativeTypeName("cc::u32")]
+        public uint count;
+    }
+
+    public partial struct FGpuCommandSetScissorRect
+    {
+        [NativeTypeName("cc::u32")]
+        public uint count;
+    }
+
+    public partial struct FGpuCommandSetPipeline
+    {
+        [NativeTypeName("cc::u32")]
+        public uint pipeline;
+    }
+
+    public partial struct FGpuCommandDrawInstanced
+    {
+        [NativeTypeName("cc::u32")]
+        public uint vertex_count_per_instance;
+
+        [NativeTypeName("cc::u32")]
+        public uint instance_count;
+
+        [NativeTypeName("cc::u32")]
+        public uint start_vertex_location;
+
+        [NativeTypeName("cc::u32")]
+        public uint start_instance_location;
+    }
+
+    public partial struct FGpuCommandDispatch
+    {
+        [NativeTypeName("u32[3]")]
+        public _thread_group_count_e__FixedBuffer thread_group_count;
+
+        [InlineArray(3)]
+        public partial struct _thread_group_count_e__FixedBuffer
+        {
+            public uint e0;
+        }
+    }
+
+    public unsafe partial struct FGpuStreamCommands
+    {
+        public FGpuCommandOp** stream;
+
+        [NativeTypeName("size_t")]
+        public nuint count;
     }
 
     [NativeTypeName("uint8_t")]

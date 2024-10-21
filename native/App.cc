@@ -1,5 +1,7 @@
 #include "App.h"
 
+#include <mimalloc.h>
+
 #include "rendering/Rendering.h"
 #include "utils/error.h"
 #include "window/Window.h"
@@ -74,6 +76,52 @@ bool App::EventFilter(const SDL_Event& event) // NOLINT(*-make-member-function-c
         m_vtb.on_message(FMessage::WindowResize, reinterpret_cast<void*>(static_cast<size_t>(event.window.windowID)));
     }
     return true;
+}
+
+FError App::MemAlloc(const size_t size, void** out) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            *out = mi_malloc(size);
+        }
+    );
+}
+
+FError App::MemFree(void* ptr) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            mi_free(ptr);
+        }
+    );
+}
+
+FError App::MemReAlloc(void* ptr, const size_t new_size, void** out) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            *out = mi_realloc(ptr, new_size);
+        }
+    );
+}
+
+FError App::MemFreeLinkedList(FLikeLinkedList* ptr) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            do
+            {
+                const auto next = ptr->next;
+                mi_free(ptr);
+                ptr = next;
+            }
+            while (ptr);
+        }
+    );
 }
 
 FError App::MsgLoop() noexcept

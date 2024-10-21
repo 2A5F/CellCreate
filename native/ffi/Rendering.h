@@ -122,4 +122,119 @@ namespace cc
         GpuHeapType heap_type;
         b8 uav;
     };
+
+    namespace gpu
+    {
+        struct FGpuGraphConsts
+        {
+            constexpr static u32 NullViewId = 0;
+            constexpr static u32 SurfaceRtvId = 0xffffffff - 1;
+        };
+
+        enum class FGpuCommandOp : u8
+        {
+            // 无操作
+            Nop,
+            // 清空指定的 rtv
+            ClearRtv,
+            // 清空指定的 dsv
+            ClearDsv,
+            // 设置当前渲染目标
+            SetRt,
+            // 设置视口
+            SetViewPort,
+            // 设置裁剪矩形
+            SetScissorRect,
+            // 设置管线
+            SetPipeline,
+            // 绘制
+            DrawInstanced,
+            // 调度 Compute shader
+            Dispatch,
+            // 调度 Mesh shader，也使用 FGpuCommandDispatch
+            DispatchMesh,
+        };
+
+        struct FGpuCommandClearRtv
+        {
+            // rtv id
+            u32 rtv;
+            // 颜色
+            f32 color[4];
+            // 0 表示清空全部
+            u32 rects;
+            // 尾随 rects 个 int4 (l, t, r, b)
+        };
+
+        struct FGpuCommandClearDsv
+        {
+            // dsv id
+            u32 dsv;
+
+            struct
+            {
+                u8 depth   : 1;
+                u8 stencil : 1;
+            } flags;
+
+            // 模板
+            u8 stencil;
+            // 深度
+            f32 depth;
+
+            // 0 表示清空全部
+            u32 rects;
+            // 尾随 rects 个 int4 (l, t, r, b)
+        };
+
+        struct FGpuCommandSetRt
+        {
+            // dsv id
+            u32 dsv;
+            // 有多少个 rtv
+            u32 rtv_count;
+            // 尾随 rtv_count 个 u32 rtv id
+        };
+
+        struct FGpuCommandSetViewPort
+        {
+            // 有多少个视口
+            u32 count;
+            // 尾随 count 个 float[6] (top left x, top left y, width, height, min depth, max depth)
+        };
+
+        struct FGpuCommandSetScissorRect
+        {
+            // 有多少个裁剪矩形
+            u32 count;
+            // 尾随 count 个 int[4] (x, y, w, h)
+        };
+
+        struct FGpuCommandSetPipeline
+        {
+            // 管线 id
+            u32 pipeline;
+        };
+
+        struct FGpuCommandDrawInstanced
+        {
+            u32 vertex_count_per_instance;
+            u32 instance_count;
+            u32 start_vertex_location;
+            u32 start_instance_location;
+        };
+
+        struct FGpuCommandDispatch
+        {
+            // x y z
+            u32 thread_group_count[3];
+        };
+
+        struct FGpuStreamCommands
+        {
+            // (FGpuCommandOp, ..var size data)[]
+            FGpuCommandOp** stream;
+            size_t count;
+        };
+    }
 }

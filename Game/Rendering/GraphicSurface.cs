@@ -5,13 +5,13 @@ using Game.Windowing;
 namespace Game.Rendering;
 
 [Dropping(Unmanaged = true)]
-public sealed unsafe partial class RenderingContext
+public sealed unsafe partial class GraphicSurface
 {
     public RenderingManager RenderingManager { get; }
     private WindowHandle WindowHandle { get; }
     internal FRenderingContext* m_ptr;
 
-    internal RenderingContext(FRenderingContext* ptr, RenderingManager rendering_manager, WindowHandle window_handle)
+    internal GraphicSurface(FRenderingContext* ptr, RenderingManager rendering_manager, WindowHandle window_handle)
     {
         m_ptr = ptr;
         RenderingManager = rendering_manager;
