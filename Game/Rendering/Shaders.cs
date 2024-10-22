@@ -1,8 +1,11 @@
 ﻿using System.Collections.Frozen;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Coplt.Dropping;
 using Coplt.ShaderReflections;
+using Game.Native;
 using Game.Rendering.Contents;
 using Serilog;
 using Serilog.Core;
@@ -36,49 +39,140 @@ public record Shader(string Path, Guid Id)
     #endregion
 }
 
-public record ShaderPass(string Name, ShaderStages Stages)
+[Dropping(Unmanaged = true)]
+public unsafe partial class ShaderPass
 {
     public Shader Shader { get; internal set; } = null!;
-    internal ShaderStateModel States;
     public int Index { get; internal set; }
-    public ShaderModule? Cs { get; internal set; }
-    public ShaderModule? Ps { get; internal set; }
-    public ShaderModule? Vs { get; internal set; }
-    public ShaderModule? Ms { get; internal set; }
-    public ShaderModule? Ts { get; internal set; }
+    public string Name { get; }
 
-    public override string ToString() => $"ShaderPass[{Name}]";
+    internal FShaderPass* m_ptr;
+    internal FShaderPassData* m_data;
 
-    #region Equals
+    public ref readonly GraphicsPipelineState State => ref m_data->state;
+    public ShaderStages Stages => Unsafe.BitCast<FShaderStages, ShaderStages>(m_data->stages);
 
-    public virtual bool Equals(ShaderPass? other) => ReferenceEquals(this, other);
-    public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
+    internal ShaderPass(in ShaderPassTmp tmp)
+    {
+        Name = tmp.Name;
+        FShaderPassData pass_data;
+        m_ptr = CreateStage0(&pass_data, in tmp, in tmp.States);
+        FShaderPassData* p_data;
+        m_ptr->DataPtr(&p_data).TryThrow();
+        m_data = p_data;
 
-    #endregion
+        // set state
+        static FShaderPass* CreateStage0(
+            FShaderPassData* pass_data, in ShaderPassTmp pass, in ShaderStateModel States
+        )
+        {
+            ref readonly var states = ref States;
+            var state = &pass_data->state;
+            *state = new();
 
-    internal Dictionary<PipelineRtInfo, ShaderPipeline> PipelineStates { get; } = new();
+            // todo other state
 
-    public ShaderPipeline GetOrCreatePipelineState(PipelineRtInfo index)
+            state->rasterizer_state.fill_mode = states.Fill;
+            state->rasterizer_state.cull_mode = states.Cull;
+
+            // todo other state
+
+            state->primitive_topology = states.Topology;
+
+            return CreateStage1(pass_data, in pass);
+        }
+
+        // set modules
+        static FShaderPass* CreateStage1(
+            FShaderPassData* pass_data, in ShaderPassTmp pass
+        )
+        {
+            pass_data->stages = Unsafe.BitCast<ShaderStages, FShaderStages>(pass.Stages);
+            if (pass is { Cs: { } cs })
+            {
+                fixed (byte* cs_blob = cs.Blob)
+                {
+                    pass_data->modules[0] = new(cs_blob, (nuint)cs.Blob.Length);
+                    return CreateStage2(pass_data);
+                }
+            }
+            else if (pass is { Ps: { } ps })
+            {
+                fixed (byte* ps_blob = ps.Blob)
+                {
+                    pass_data->modules[0] = new(ps_blob, (nuint)ps.Blob.Length);
+                    if (pass is { Vs: { } vs })
+                    {
+                        fixed (byte* vs_blob = vs.Blob)
+                        {
+                            pass_data->modules[1] = new(vs_blob, (nuint)vs.Blob.Length);
+                            return CreateStage2(pass_data);
+                        }
+                    }
+                    if (pass is { Ms: { } ms })
+                    {
+                        fixed (byte* ms_blob = ms.Blob)
+                        {
+                            pass_data->modules[1] = new(ms_blob, (nuint)ms.Blob.Length);
+
+                            if (pass is { Ts: { } ts })
+                            {
+                                fixed (byte* ts_blob = ts.Blob)
+                                {
+                                    pass_data->modules[2] = new(ts_blob, (nuint)ts.Blob.Length);
+                                    return CreateStage2(pass_data);
+                                }
+                            }
+                            return CreateStage2(pass_data);
+                        }
+                    }
+                }
+            }
+            throw new NotSupportedException("Invalid shader pass");
+        }
+
+        // do create
+        static FShaderPass* CreateStage2(FShaderPassData* pass_data)
+        {
+            FShaderPass* ptr;
+            App.s_native_app->CreateShaderPass(pass_data, &ptr).TryThrow();
+            return ptr;
+        }
+    }
+
+    [Drop]
+    private void Drop()
+    {
+        if (ExchangeUtils.ExchangePtr(ref m_ptr, null, out var ptr) is null) return;
+        ptr->Release();
+    }
+
+    #region Todo : remove
+
+    internal Dictionary<PipelineRtOverride, ShaderPipeline> PipelineStates { get; } = new();
+
+    public ShaderPipeline GetOrCreateGraphicsShaderPipeline(PipelineRtOverride index)
     {
         if (PipelineStates.TryGetValue(index, out var pipelineState)) return pipelineState;
-        if ((Stages & ShaderStages.Cs) != 0) throw new NotImplementedException("todo");
-        else pipelineState = new GraphicsShaderPipeline(this);
+        else pipelineState = new GraphicsShaderPipeline(this, index);
         PipelineStates[index] = pipelineState;
         return pipelineState;
     }
-}
-
-public record ShaderModule(ShaderStage Stage, byte[] Blob, ShaderMeta Meta)
-{
-    public override string ToString() => $"ShaderModule[{Stage}]";
-
-    #region Equals
-
-    public virtual bool Equals(ShaderModule? other) => ReferenceEquals(this, other);
-    public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
 
     #endregion
 }
+
+internal record struct ShaderPassTmp(string Name, ShaderStages Stages)
+{
+    internal ShaderStateModel States;
+    public ShaderModuleTmp? Cs { get; internal set; }
+    public ShaderModuleTmp? Ps { get; internal set; }
+    public ShaderModuleTmp? Vs { get; internal set; }
+    public ShaderModuleTmp? Ms { get; internal set; }
+    public ShaderModuleTmp? Ts { get; internal set; }
+}
+
+internal record ShaderModuleTmp(ShaderStage Stage, byte[] Blob, ShaderMeta Meta);
 
 public static class Shaders
 {
@@ -146,7 +240,7 @@ public static class Shaders
         }
 
         var r = new Shader(path, id) { Passes = passes, NameToPass = by_name };
-        
+
         foreach (var pass in passes)
         {
             pass.Shader = r;
@@ -177,34 +271,34 @@ public static class Shaders
             };
         }
 
-        var r = new ShaderPass(name, stages) { States = pass.States };
+        var tmp = new ShaderPassTmp(name, stages) { States = pass.States };
 
         foreach (var module in modules)
         {
             switch (module.Stage)
             {
                 case ShaderStage.Cs:
-                    r.Cs = module;
+                    tmp.Cs = module;
                     break;
                 case ShaderStage.Ps:
-                    r.Ps = module;
+                    tmp.Ps = module;
                     break;
                 case ShaderStage.Vs:
-                    r.Vs = module;
+                    tmp.Vs = module;
                     break;
                 case ShaderStage.Ms:
-                    r.Ms = module;
+                    tmp.Ms = module;
                     break;
                 case ShaderStage.Ts:
-                    r.Ts = module;
+                    tmp.Ts = module;
                     break;
             }
         }
 
-        return r;
+        return new ShaderPass(in tmp);
     }
 
-    internal static async Task<ShaderModule> LoadShaderModule(string shader_path, string path, string name,
+    internal static async Task<ShaderModuleTmp> LoadShaderModule(string shader_path, string path, string name,
         ShaderStage stage)
     {
         var module_path = Path.Combine(shader_path, $"{name}.{stage}.dxil");
@@ -220,6 +314,6 @@ public static class Shaders
             re = await JsonSerializer.DeserializeAsync<ShaderMeta>(re_stream, ReflectionDeserializeOptions);
         }
 
-        return new ShaderModule(stage, blob, re!);
+        return new ShaderModuleTmp(stage, blob, re!);
     }
 }

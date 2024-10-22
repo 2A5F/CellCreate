@@ -86,6 +86,8 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/rendering/gpu_convert.h
         native/rendering/GpuResource.cc
         native/rendering/GpuResource.h
+        native/RenderGraph.cc
+        native/RenderGraph.h
 )
 
 if (WIN32)

@@ -8,6 +8,7 @@
 #include "../utils/error.h"
 #include "./gpu_convert.h"
 #include "GpuResource.h"
+#include "../RenderGraph.h"
 
 using namespace cc;
 
@@ -321,7 +322,7 @@ namespace
     }
 }
 
-FError Rendering::MakeContext(FWindowHandle* window_handle, FRenderingContext** out) noexcept
+FError Rendering::MakeContext(FWindowHandle* window_handle, FGraphicSurface** out) noexcept
 {
     void* hwnd;
     uint2 size;
@@ -330,19 +331,33 @@ FError Rendering::MakeContext(FWindowHandle* window_handle, FRenderingContext** 
     return ferr_back(
         [&]
         {
-            Rc r = new RenderingContext(this, window_handle, hwnd, size);
+            Rc r = new GraphicSurface(this, window_handle, hwnd, size);
             m_contexts[r->m_id] = r;
             *out = r.leak();
         }
     );
 }
 
-FError Rendering::CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept
+FError Rendering::CreateGraph(FGpuGraph** out) noexcept
 {
     return ferr_back(
         [&]
         {
-            Rc r = new GraphicsShaderPipeline(this->CloneThis(), pass);
+            Rc r = new RenderGraph(this->CloneThis());
+            *out = r.leak();
+        }
+    );
+}
+
+FError Rendering::CreateGraphicsShaderPipeline(
+    const FShaderPassData* pass, /* opt */const GraphicsPipelineFormatOverride* override,
+    FGraphicsShaderPipeline** out
+) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            Rc r = new GraphicsShaderPipeline(this->CloneThis(), pass, override);
             *out = r.leak();
         }
     );
@@ -507,13 +522,13 @@ FError Rendering::CurrentCommandList(void** out) noexcept
     return FError::None();
 }
 
-FError Rendering::ClearSurface(FRenderingContext* ctx, float4 color) noexcept
+FError Rendering::ClearSurface(FGraphicSurface* ctx, float4 color) noexcept
 {
     if (!m_state._on_recording) return FError::Common(str16(u"Frame not started"));
     return ferr_back(
         [&]
         {
-            const auto* context = static_cast<RenderingContext*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
+            const auto* context = static_cast<GraphicSurface*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
             m_current_command_list->ClearRenderTargetView(
                 context->m_current_cpu_handle, reinterpret_cast<FLOAT*>(&color), 0, nullptr
             );
@@ -521,13 +536,13 @@ FError Rendering::ClearSurface(FRenderingContext* ctx, float4 color) noexcept
     );
 }
 
-FError Rendering::CurrentFrameRtv(FRenderingContext* ctx, void** out) noexcept
+FError Rendering::CurrentFrameRtv(FGraphicSurface* ctx, void** out) noexcept
 {
     if (!m_state._on_recording) return FError::Common(str16(u"Frame not started"));
     return ferr_back(
         [&]
         {
-            const auto* context = static_cast<RenderingContext*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
+            const auto* context = static_cast<GraphicSurface*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
             *out = reinterpret_cast<void*>(context->m_current_cpu_handle.ptr);
         }
     );
@@ -614,7 +629,7 @@ void Queue::ReSet(const UINT32 index)
     check_error << m_command_allocators[index]->Reset();
 }
 
-void RenderingContext::re_create_rts()
+void GraphicSurface::re_create_rts()
 {
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtv_heap->GetCPUDescriptorHandleForHeapStart());
 
@@ -627,7 +642,7 @@ void RenderingContext::re_create_rts()
     }
 }
 
-void RenderingContext::do_re_size()
+void GraphicSurface::do_re_size()
 {
     for (auto& rt : m_rts) rt = nullptr;
 
@@ -636,6 +651,8 @@ void RenderingContext::do_re_size()
     check_error << m_swap_chain->ResizeBuffers(
         FrameCount, m_new_size.x, m_new_size.y, desc.Format, desc.Flags
     );
+
+    m_data.size = m_current_size = m_new_size;
 
     re_create_rts();
 
@@ -647,9 +664,10 @@ namespace
     std::atomic_size_t s_rendering_context_id_inc{0};
 }
 
-RenderingContext::RenderingContext(Rendering* rendering, FWindowHandle* window, void* hwnd, uint2 size)
+GraphicSurface::GraphicSurface(Rendering* rendering, FWindowHandle* window, void* hwnd, uint2 size)
     : m_id(s_rendering_context_id_inc++), m_rendering(rendering), m_current_size(size), m_new_size(size)
 {
+    m_data.size = size;
     m_window = Rc<FWindowHandle>::UnsafeClone(window);
 
     const auto device = m_rendering->m_device.get();
@@ -691,12 +709,13 @@ RenderingContext::RenderingContext(Rendering* rendering, FWindowHandle* window, 
     re_create_rts();
 }
 
-void RenderingContext::ReadyFrame(ID3D12GraphicsCommandList6* list)
+void GraphicSurface::ReadyFrame(ID3D12GraphicsCommandList6* list)
 {
     m_frame_index = m_swap_chain->GetCurrentBackBufferIndex();
     m_current_cpu_handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(
         m_rtv_heap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(m_frame_index), m_rtv_descriptor_size
     );
+    m_data.current_frame_rtv = reinterpret_cast<void*>(m_current_cpu_handle.ptr);
 
     D3D12_RESOURCE_BARRIER barrier{};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -709,7 +728,7 @@ void RenderingContext::ReadyFrame(ID3D12GraphicsCommandList6* list)
     list->ResourceBarrier(1, &barrier);
 }
 
-void RenderingContext::EndFrame(ID3D12GraphicsCommandList6* list)
+void GraphicSurface::EndFrame(ID3D12GraphicsCommandList6* list)
 {
     D3D12_RESOURCE_BARRIER barrier{};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -722,12 +741,12 @@ void RenderingContext::EndFrame(ID3D12GraphicsCommandList6* list)
     list->ResourceBarrier(1, &barrier);
 }
 
-void RenderingContext::Present() const
+void GraphicSurface::Present() const
 {
     check_error << m_swap_chain->Present(m_rendering->m_state.v_sync ? 1 : 0, 0);
 }
 
-FError RenderingContext::Destroy() noexcept
+FError GraphicSurface::Destroy() noexcept
 {
     return ferr_back(
         [&]
@@ -737,7 +756,13 @@ FError RenderingContext::Destroy() noexcept
     );
 }
 
-FError RenderingContext::OnResize(uint2 size) noexcept
+FError GraphicSurface::DataPtr(FGraphicSurfaceData** out) noexcept
+{
+    *out = &m_data;
+    return FError::None();
+}
+
+FError GraphicSurface::OnResize(uint2 size) noexcept
 {
     if (m_current_size == size) return FError::None();
     m_new_size = size;
@@ -803,6 +828,23 @@ void DescriptorSet::ReadyFrame()
     m_heap_sampler.ReadyFrame();
 }
 
+ShaderPass::ShaderPass(const FShaderPassData* data) : m_data(*data)
+{
+    for (auto i = 0; i < MaxModules; ++i)
+    {
+        const auto& module = data->modules[i];
+        const auto span = std::span(module.data(), module.size());
+        new(&m_modules[i]) std::vector(span.begin(), span.end());
+        new(&m_data.modules[i]) FrBlob(m_modules[i].data(), m_modules[i].size());
+    }
+}
+
+FError ShaderPass::DataPtr(FShaderPassData** out) noexcept
+{
+    *out = &m_data;
+    return FError::None();
+}
+
 namespace
 {
     void set_state(auto& desc, const auto& state)
@@ -823,12 +865,24 @@ namespace
     }
 }
 
-GraphicsShaderPipeline::GraphicsShaderPipeline(Rc<Rendering>&& rendering, FShaderPassData* pass) : m_rendering(
+GraphicsShaderPipeline::GraphicsShaderPipeline(
+    Rc<Rendering>&& rendering, const FShaderPassData* pass, /* opt */ const GraphicsPipelineFormatOverride* override
+) : m_rendering(
     std::move(rendering)
 ), m_state(pass->state)
 {
     CD3DX12_PIPELINE_STATE_STREAM2 stream{};
     D3D12_INPUT_ELEMENT_DESC input_elements{};
+
+    if (override)
+    {
+        m_state.rt_count = override->rt_count;
+        m_state.dsv_format = override->dsv_format;
+        for (auto i = 0; i < override->rt_count; ++i)
+        {
+            m_state.rtv_formats[i] = override->rtv_formats[i];
+        }
+    }
 
     if (pass->stages.vs)
     {

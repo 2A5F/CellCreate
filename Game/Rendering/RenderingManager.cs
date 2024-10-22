@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using Coplt.Dropping;
 using Game.Native;
-using Game.Utilities;
 using Game.Windowing;
 using Silk.NET.Direct3D12;
 
@@ -14,6 +13,7 @@ public sealed unsafe partial class RenderingManager
     internal FRendering* m_ptr;
     internal readonly FRenderingState* m_state;
 
+    [Drop]
     public RenderGraph Graph { get; }
 
     internal RenderingManager()
@@ -22,7 +22,7 @@ public sealed unsafe partial class RenderingManager
         App.s_native_app->CreateRendering(&ptr).TryThrow();
         m_ptr = ptr;
         m_state = m_ptr->StatePtr();
-        Graph = new() { Rendering = this };
+        Graph = new(this);
     }
 
     [Drop]
@@ -38,7 +38,7 @@ public sealed unsafe partial class RenderingManager
         static (Handle, data) =>
         {
             var (window, self) = data;
-            FRenderingContext* ptr;
+            FGraphicSurface* ptr;
             self.m_ptr->MakeContext(Handle.m_ptr, &ptr).TryThrow();
             var ctx = new GraphicSurface(ptr, self, Handle);
             window.Surface = ctx;

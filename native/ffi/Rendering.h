@@ -10,12 +10,13 @@ namespace cc
         static constexpr uint32_t FrameCount = 3;
     };
 
-    struct FRenderingContext;
+    struct FGraphicSurface;
     struct FCommandList;
     struct FGpuResource;
     struct FGpuBuffer;
     struct FGpuTexture;
     struct FGpuBufferCreateOptions;
+    struct FGpuGraph;
 
     struct FRenderingState
     {
@@ -31,9 +32,13 @@ namespace cc
 
         virtual FRenderingState* StatePtr() noexcept = 0;
 
-        virtual FError MakeContext(FWindowHandle* window_handle, FRenderingContext** out) noexcept = 0;
+        virtual FError MakeContext(FWindowHandle* window_handle, FGraphicSurface** out) noexcept = 0;
 
-        virtual FError CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept = 0;
+        virtual FError CreateGraph(FGpuGraph** out) noexcept = 0;
+        virtual FError CreateGraphicsShaderPipeline(
+            const FShaderPassData* pass, /* opt */const GraphicsPipelineFormatOverride* override,
+            FGraphicsShaderPipeline** out
+        ) noexcept = 0;
         virtual FError CreateBuffer(const FGpuBufferCreateOptions* options, FGpuBuffer** out) noexcept = 0;
 
         virtual FError ReadyFrame() noexcept = 0;
@@ -44,17 +49,27 @@ namespace cc
         // out 是 ID3D12GraphicsCommandList6**
         virtual FError CurrentCommandList(void** out) noexcept = 0;
 
-        virtual FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept = 0;
+        virtual FError ClearSurface(FGraphicSurface* ctx, float4 color) noexcept = 0;
         // out 是 D3D12_CPU_DESCRIPTOR_HANDLE*
-        virtual FError CurrentFrameRtv(FRenderingContext* ctx, void** out) noexcept = 0;
+        virtual FError CurrentFrameRtv(FGraphicSurface* ctx, void** out) noexcept = 0;
     };
 
-    struct FRenderingContext : IObject, FGpuConsts
+    struct FGraphicSurfaceData
+    {
+        // D3D12_CPU_DESCRIPTOR_HANDLE
+        void* current_frame_rtv;
+        uint2 size;
+        TextureFormat format;
+    };
+
+    struct FGraphicSurface : IObject, FGpuConsts
     {
         IMPL_INTERFACE("b0378104-80ee-4272-9c58-3af6e35ec437", IObject);
 
         // 销毁，被 Rendering 持有正常析构不会销毁需要手动销毁
         virtual FError Destroy() noexcept = 0;
+
+        virtual FError DataPtr(FGraphicSurfaceData** out) noexcept = 0;
 
         virtual FError OnResize(uint2 size) noexcept = 0;
     };
@@ -123,14 +138,13 @@ namespace cc
         b8 uav;
     };
 
+    struct FGpuGraph : IObject
+    {
+        IMPL_INTERFACE("e3f38929-74e9-4df0-8001-e82eed2a23f7", IObject);
+    };
+
     namespace gpu
     {
-        struct FGpuGraphConsts
-        {
-            constexpr static u32 NullViewId = 0;
-            constexpr static u32 SurfaceRtvId = 0xffffffff - 1;
-        };
-
         enum class FGpuCommandOp : u8
         {
             // 无操作
@@ -145,8 +159,8 @@ namespace cc
             SetViewPort,
             // 设置裁剪矩形
             SetScissorRect,
-            // 设置管线
-            SetPipeline,
+            // 设置着色器
+            SetShader,
             // 绘制
             DrawInstanced,
             // 调度 Compute shader
@@ -157,19 +171,25 @@ namespace cc
 
         struct FGpuCommandClearRtv
         {
-            // rtv id
-            u32 rtv;
             // 颜色
-            f32 color[4];
+            f32 color_r;
+            f32 color_g;
+            f32 color_b;
+            f32 color_a;
             // 0 表示清空全部
             u32 rects;
+            // 尾随 1 个 rtv D3D12_CPU_DESCRIPTOR_HANDLE
             // 尾随 rects 个 int4 (l, t, r, b)
         };
 
         struct FGpuCommandClearDsv
         {
-            // dsv id
-            u32 dsv;
+            // 0 表示清空全部
+            u32 rects;
+            // 深度
+            f32 depth;
+            // 模板
+            u8 stencil;
 
             struct
             {
@@ -177,43 +197,36 @@ namespace cc
                 u8 stencil : 1;
             } flags;
 
-            // 模板
-            u8 stencil;
-            // 深度
-            f32 depth;
-
-            // 0 表示清空全部
-            u32 rects;
+            // 尾随 1 个 dsv D3D12_CPU_DESCRIPTOR_HANDLE
             // 尾随 rects 个 int4 (l, t, r, b)
         };
 
         struct FGpuCommandSetRt
         {
-            // dsv id
-            u32 dsv;
             // 有多少个 rtv
-            u32 rtv_count;
-            // 尾随 rtv_count 个 u32 rtv id
+            u8 rtv_count;
+            // 尾随 1 个 dsv D3D12_CPU_DESCRIPTOR_HANDLE
+            // 尾随 rtv_count 个 rtv D3D12_CPU_DESCRIPTOR_HANDLE
         };
 
         struct FGpuCommandSetViewPort
         {
             // 有多少个视口
-            u32 count;
+            u8 count;
             // 尾随 count 个 float[6] (top left x, top left y, width, height, min depth, max depth)
         };
 
         struct FGpuCommandSetScissorRect
         {
             // 有多少个裁剪矩形
-            u32 count;
+            u8 count;
             // 尾随 count 个 int[4] (x, y, w, h)
         };
 
-        struct FGpuCommandSetPipeline
+        struct FGpuCommandSetShader
         {
-            // 管线 id
-            u32 pipeline;
+            // shader pass，将自动根据上下文创建 pipeline
+            FShaderPass* pass;
         };
 
         struct FGpuCommandDrawInstanced
@@ -227,7 +240,9 @@ namespace cc
         struct FGpuCommandDispatch
         {
             // x y z
-            u32 thread_group_count[3];
+            u32 thread_group_count_x;
+            u32 thread_group_count_y;
+            u32 thread_group_count_z;
         };
 
         struct FGpuStreamCommands

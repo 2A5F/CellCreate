@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Coplt.Dropping;
 using Game.Native;
+using Silk.NET.Direct3D12;
 
 namespace Game.Rendering;
 
@@ -13,7 +14,6 @@ public partial class CommandBuffer
     internal List<nuint> m_stream = new();
 
     internal RenderingManager Rendering;
-    internal GraphicSurface? Surface { get; set; }
 
     internal CommandBuffer(RenderingManager rendering)
     {
@@ -35,18 +35,23 @@ public partial class CommandBuffer
 
     #region InternalClearRtv
 
-    internal unsafe void InternalClearRtv(uint rtv, float4 color, ReadOnlySpan<int4> rects)
+    internal unsafe void InternalClearRtv(CpuDescriptorHandle rtv, float4 color, ReadOnlySpan<int4> rects)
     {
-        m_stream.Add(m_data.Count);
-        var data = m_data.Extra(1 + (nuint)sizeof(FGpuCommandClearRtv) + (nuint)(sizeof(int4) * rects.Length));
+        var data = m_data.Extra(
+            (nuint)(1 + sizeof(FGpuCommandClearRtv) + sizeof(CpuDescriptorHandle) + sizeof(int4) * rects.Length)
+        );
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.ClearRtv;
-        ref var s = ref *(FGpuCommandClearRtv*)data[(nuint)1];
-        s.rtv = rtv;
-        s.color = Unsafe.BitCast<float4, FGpuCommandClearRtv._color_e__FixedBuffer>(color);
-        s.rects = (uint)rects.Length;
+        var s = (FGpuCommandClearRtv*)data[(nuint)1];
+        *(float4*)&s->color_r = color;
+        s->rects = (uint)rects.Length;
+        *(CpuDescriptorHandle*)data[(nuint)(1 + sizeof(FGpuCommandClearRtv))] = rtv;
         if (rects.Length > 0)
         {
-            var r = new Span<int4>(data[1 + (nuint)sizeof(FGpuCommandClearRtv)], rects.Length);
+            var r = new Span<int4>(
+                data[(nuint)(1 + sizeof(FGpuCommandClearRtv) + sizeof(CpuDescriptorHandle))],
+                rects.Length
+            );
             rects.CopyTo(r);
         }
     }
@@ -55,21 +60,28 @@ public partial class CommandBuffer
 
     #region InternalClearDsv
 
-    internal unsafe void InternalClearDsv(uint dsv, float? depth, byte? stencil, ReadOnlySpan<int4> rects)
+    internal unsafe void InternalClearDsv(
+        CpuDescriptorHandle dsv, float? depth, byte? stencil, ReadOnlySpan<int4> rects
+    )
     {
-        m_stream.Add(m_data.Count);
-        var data = m_data.Extra(1 + (nuint)sizeof(FGpuCommandClearDsv) + (nuint)(sizeof(int4) * rects.Length));
+        var data = m_data.Extra(
+            (nuint)(1 + sizeof(FGpuCommandClearDsv) + sizeof(CpuDescriptorHandle) + sizeof(int4) * rects.Length)
+        );
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.ClearDsv;
-        ref var s = ref *(FGpuCommandClearDsv*)data[(nuint)1];
-        s.dsv = dsv;
-        s.flags.depth = depth.HasValue ? (byte)1 : (byte)0;
-        s.flags.stencil = stencil.HasValue ? (byte)1 : (byte)0;
-        s.depth = depth ?? 0;
-        s.stencil = stencil ?? 0;
-        s.rects = (uint)rects.Length;
+        var s = (FGpuCommandClearDsv*)data[(nuint)1];
+        s->rects = (uint)rects.Length;
+        s->depth = depth ?? 0;
+        s->stencil = stencil ?? 0;
+        s->flags.depth = depth.HasValue ? (byte)1 : (byte)0;
+        s->flags.stencil = stencil.HasValue ? (byte)1 : (byte)0;
+        *(CpuDescriptorHandle*)data[(nuint)(1 + sizeof(FGpuCommandClearDsv))] = dsv;
         if (rects.Length > 0)
         {
-            var r = new Span<int4>(data[1 + (nuint)sizeof(FGpuCommandClearDsv)], rects.Length);
+            var r = new Span<int4>(
+                data[(nuint)(1 + sizeof(FGpuCommandClearDsv) + sizeof(CpuDescriptorHandle))],
+                rects.Length
+            );
             rects.CopyTo(r);
         }
     }
@@ -78,17 +90,23 @@ public partial class CommandBuffer
 
     #region InternalSetRt
 
-    internal unsafe void InternalSetRt(uint dsv, ReadOnlySpan<uint> rtvs)
+    internal unsafe void InternalSetRt(CpuDescriptorHandle dsv, ReadOnlySpan<CpuDescriptorHandle> rtvs)
     {
-        m_stream.Add(m_data.Count);
-        var data = m_data.Extra(1 + (nuint)sizeof(FGpuCommandSetRt) + (nuint)(sizeof(uint) * rtvs.Length));
+        var data = m_data.Extra(
+            (nuint)(1 + sizeof(FGpuCommandSetRt) + sizeof(CpuDescriptorHandle) +
+                    sizeof(CpuDescriptorHandle) * rtvs.Length)
+        );
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.SetRt;
-        ref var s = ref *(FGpuCommandSetRt*)data[(nuint)1];
-        s.dsv = dsv;
-        s.rtv_count = (uint)rtvs.Length;
+        var s = (FGpuCommandSetRt*)data[(nuint)1];
+        s->rtv_count = (byte)rtvs.Length;
+        *(CpuDescriptorHandle*)data[(nuint)(1 + sizeof(FGpuCommandSetRt))] = dsv;
         if (rtvs.Length > 0)
         {
-            var r = new Span<uint>(data[1 + (nuint)sizeof(FGpuCommandSetRt)], rtvs.Length);
+            var r = new Span<CpuDescriptorHandle>(
+                data[(nuint)(1 + sizeof(FGpuCommandSetRt) + sizeof(CpuDescriptorHandle))],
+                rtvs.Length
+            );
             rtvs.CopyTo(r);
         }
     }
@@ -99,15 +117,16 @@ public partial class CommandBuffer
 
     internal unsafe void InternalSetViewPort(ReadOnlySpan<ViewPort> viewports)
     {
-        m_stream.Add(m_data.Count);
         var data = m_data.Extra(
-            1 + (nuint)sizeof(FGpuCommandSetViewPort) + (nuint)(sizeof(ViewPort) * viewports.Length));
+            (nuint)(1 + sizeof(FGpuCommandSetViewPort) + sizeof(ViewPort) * viewports.Length)
+        );
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.SetViewPort;
-        ref var s = ref *(FGpuCommandSetViewPort*)data[(nuint)1];
-        s.count = (uint)viewports.Length;
+        var s = (FGpuCommandSetViewPort*)data[(nuint)1];
+        s->count = (byte)viewports.Length;
         if (viewports.Length > 0)
         {
-            var r = new Span<ViewPort>(data[1 + (nuint)sizeof(FGpuCommandSetViewPort)], viewports.Length);
+            var r = new Span<ViewPort>(data[(nuint)(1 + sizeof(FGpuCommandSetViewPort))], viewports.Length);
             viewports.CopyTo(r);
         }
     }
@@ -118,30 +137,31 @@ public partial class CommandBuffer
 
     internal unsafe void InternalSetScissorRect(ReadOnlySpan<int4> rects)
     {
-        m_stream.Add(m_data.Count);
         var data = m_data.Extra(
-            1 + (nuint)sizeof(FGpuCommandSetScissorRect) + (nuint)(sizeof(int4) * rects.Length));
+            (nuint)(1 + sizeof(FGpuCommandSetScissorRect) + sizeof(int4) * rects.Length)
+        );
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.SetScissorRect;
-        ref var s = ref *(FGpuCommandSetScissorRect*)data[(nuint)1];
-        s.count = (uint)rects.Length;
+        var s = (FGpuCommandSetScissorRect*)data[(nuint)1];
+        s->count = (byte)rects.Length;
         if (rects.Length > 0)
         {
-            var r = new Span<int4>(data[1 + (nuint)sizeof(FGpuCommandSetScissorRect)], rects.Length);
+            var r = new Span<int4>(data[(nuint)(1 + sizeof(FGpuCommandSetScissorRect))], rects.Length);
             rects.CopyTo(r);
         }
     }
 
     #endregion
 
-    #region InternalSetPipeline
+    #region InternalSetShader
 
-    internal unsafe void InternalSetPipeline(uint pipeline)
+    internal unsafe void InternalSetShader(FShaderPass* pipeline)
     {
-        m_stream.Add(m_data.Count);
-        var data = m_data.Extra(1 + (nuint)sizeof(FGpuCommandSetPipeline));
-        data[0] = (byte)FGpuCommandOp.SetPipeline;
-        ref var s = ref *(FGpuCommandSetPipeline*)data[(nuint)1];
-        s.pipeline = pipeline;
+        var data = m_data.Extra((nuint)(1 + sizeof(FGpuCommandSetShader)));
+        m_stream.Add((nuint)data.data);
+        data[0] = (byte)FGpuCommandOp.SetShader;
+        var s = (FGpuCommandSetShader*)data[(nuint)1];
+        s->pass = pipeline;
     }
 
     #endregion
@@ -155,8 +175,8 @@ public partial class CommandBuffer
         uint start_instance_location
     )
     {
-        m_stream.Add(m_data.Count);
-        var data = m_data.Extra(1 + (nuint)sizeof(FGpuCommandDrawInstanced));
+        var data = m_data.Extra((nuint)(1 + sizeof(FGpuCommandDrawInstanced)));
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.DrawInstanced;
         *(FGpuCommandDrawInstanced*)data[(nuint)1] = new()
         {
@@ -171,33 +191,30 @@ public partial class CommandBuffer
 
     #region InternalDispatch InternalDispatchMesh
 
-    internal void InternalDispatch(uint thread_group_count_x, uint thread_group_count_y, uint thread_group_count_z) =>
-        InternalDispatch(FGpuCommandOp.Dispatch, thread_group_count_x, thread_group_count_y, thread_group_count_z);
+    internal void InternalDispatch(
+        uint thread_group_count_x, uint thread_group_count_y, uint thread_group_count_z
+    ) => InternalDispatch(FGpuCommandOp.Dispatch, thread_group_count_x, thread_group_count_y, thread_group_count_z);
 
-    internal void InternalDispatchMesh(uint thread_group_count_x, uint thread_group_count_y,
-        uint thread_group_count_z) =>
-        InternalDispatch(FGpuCommandOp.DispatchMesh, thread_group_count_x, thread_group_count_y, thread_group_count_z);
+    internal void InternalDispatchMesh(
+        uint thread_group_count_x, uint thread_group_count_y, uint thread_group_count_z
+    ) => InternalDispatch(FGpuCommandOp.DispatchMesh, thread_group_count_x, thread_group_count_y, thread_group_count_z);
 
     private unsafe void InternalDispatch(FGpuCommandOp op,
         uint thread_group_count_x, uint thread_group_count_y, uint thread_group_count_z
     )
     {
-        m_stream.Add(m_data.Count);
         var data = m_data.Extra(1 + (nuint)sizeof(FGpuCommandDispatch));
+        m_stream.Add((nuint)data.data);
         data[0] = (byte)op;
-        ref var dispatch = ref *(FGpuCommandDispatch*)data[(nuint)1];
-        dispatch.thread_group_count[0] = thread_group_count_x;
-        dispatch.thread_group_count[1] = thread_group_count_y;
-        dispatch.thread_group_count[2] = thread_group_count_z;
+        *(FGpuCommandDispatch*)data[(nuint)1] = new()
+        {
+            thread_group_count_x = thread_group_count_x,
+            thread_group_count_y = thread_group_count_y,
+            thread_group_count_z = thread_group_count_z,
+        };
     }
 
     #endregion
-
-    #endregion
-
-    #region State
-
-    private PipelineHandle m_current_pipeline;
 
     #endregion
 
@@ -205,18 +222,16 @@ public partial class CommandBuffer
 
     #region Surface
 
-    public void ClearSurface(float4 color) => ClearSurface(color, []);
-    public void ClearSurface(float4 color, ReadOnlySpan<int4> rects)
+    public void ClearRt(GraphicSurface surface, float4 color) => ClearRt(surface, color, []);
+    public void ClearRt(GraphicSurface surface, float4 color, ReadOnlySpan<int4> rects)
     {
-        if (Surface is null) throw new NotSupportedException("The current context does not contain a surface");
-        InternalClearRtv(FGpuGraphConsts.SurfaceRtvId, color, rects);
+        InternalClearRtv(surface.CurrentFrameRtv, color, rects);
     }
 
-    public void SetRtToSurface()
+    public void SetRt(GraphicSurface surface)
     {
-        if (Surface is null) throw new NotSupportedException("The current context does not contain a surface");
-        InternalSetRt(0, [FGpuGraphConsts.SurfaceRtvId]);
-        var size = Surface.PixelSize;
+        InternalSetRt(default, [surface.CurrentFrameRtv]);
+        var size = surface.Size;
         InternalSetViewPort([new(size.x, size.y)]);
         InternalSetScissorRect([new(0, 0, (int)size.x, (int)size.y)]);
     }
@@ -225,21 +240,17 @@ public partial class CommandBuffer
 
     #region Draw
 
-    public void DrawFullScreen(PipelineHandle pipeline) => DrawInstanced(pipeline, 4, 1, 0, 0);
-    
-    public void DrawInstanced(
-        PipelineHandle pipeline,
+    public void DrawFullScreen(ShaderPass pass) => DrawInstanced(pass, 4, 1, 0, 0);
+
+    public unsafe void DrawInstanced(
+        ShaderPass pass,
         uint VertexCountPerInstance,
         uint InstanceCount,
         uint StartVertexLocation,
         uint StartInstanceLocation
     )
     {
-        if (m_current_pipeline != pipeline)
-        {
-            m_current_pipeline = pipeline;
-            InternalSetPipeline(pipeline.Id);
-        }
+        InternalSetShader(pass.m_ptr);
         InternalDrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
     }
 

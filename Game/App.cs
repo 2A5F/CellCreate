@@ -52,22 +52,22 @@ public static partial class App
 
     internal class RenderData
     {
-        public PipelineHandle shader_ui_rect;
+        public ShaderPass shader_ui_rect = null!;
     }
 
     internal static unsafe void Draw(ShaderPass shader_ui_rect)
     {
         var builder = Rendering.Graph.AddPass("Foo", out RenderData data);
-        data.shader_ui_rect = builder.UsePipeline(shader_ui_rect);
+        data.shader_ui_rect = shader_ui_rect;
         builder.SetRenderFunc(static (ctx, data) =>
         {
-            ctx.cmd.SetRtToSurface();
-            ctx.cmd.ClearSurface(new(0, 0, 0, 1));
+            ctx.cmd.ClearRt(ctx.Surface, new(0, 0, 0, 1));
+            ctx.cmd.SetRt(ctx.Surface);
             ctx.cmd.DrawFullScreen(data.shader_ui_rect);
         });
 
         // ↓ test code，↑ target code
-        var pipeline_ui_rect = shader_ui_rect.GetOrCreatePipelineState(
+        var pipeline_ui_rect = shader_ui_rect.GetOrCreateGraphicsShaderPipeline(
             new(TextureFormat.D24_UNorm_S8_UInt, [TextureFormat.R8G8B8A8_UNorm])
         );
         var size = Window.PixelSize;

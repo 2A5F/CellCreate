@@ -254,6 +254,19 @@ namespace cc
         SampleState sample_state{};
     };
 
+
+    struct GraphicsPipelineFormatOverride
+    {
+        int32_t rt_count{1};
+        TextureFormat rtv_formats[8]{
+            TextureFormat::R8G8B8A8_UNorm, TextureFormat::R8G8B8A8_UNorm,
+            TextureFormat::R8G8B8A8_UNorm, TextureFormat::R8G8B8A8_UNorm,
+            TextureFormat::R8G8B8A8_UNorm, TextureFormat::R8G8B8A8_UNorm,
+            TextureFormat::R8G8B8A8_UNorm, TextureFormat::R8G8B8A8_UNorm,
+        };
+        TextureFormat dsv_format{TextureFormat::D24_UNorm_S8_UInt};
+    };
+
     enum class ShaderStage : uint8_t
     {
         Unknown,
@@ -280,6 +293,15 @@ namespace cc
         GraphicsPipelineState state;
         FrBlob modules[MaxModules];
         FShaderStages stages;
+    };
+
+    struct FShaderPass : IObject
+    {
+        IMPL_INTERFACE("60e8339a-dfc0-4f91-8550-d14a3836e3c3", IObject);
+
+        constexpr static size_t MaxModules = 3;
+
+        virtual FError DataPtr(FShaderPassData** out) noexcept = 0;
     };
 
     struct FShaderPipeline : IObject

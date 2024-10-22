@@ -1,18 +1,57 @@
-﻿using Game.Utilities;
+﻿using Coplt.Dropping;
+using Game.Native;
+using Game.Utilities;
 
 namespace Game.Rendering;
 
-public sealed class RenderGraph
+[Dropping(Unmanaged = true)]
+public sealed unsafe partial class RenderGraph
 {
-    public required RenderingManager Rendering { get; init; }
-    private bool IsRecording { get; set; }
+    #region Native And LifeTime
 
-    public ObjectPool ObjectPool { get; } = new();
+    internal FGpuGraph* m_ptr;
+    public RenderingManager Rendering { get; }
+
+    public RenderGraph(RenderingManager rendering)
+    {
+        Rendering = rendering;
+        FGpuGraph* ptr;
+        rendering.m_ptr->CreateGraph(&ptr).TryThrow();
+        m_ptr = ptr;
+
+        CommandBufferPool = ObjectPool.Create(() => new CommandBuffer(Rendering));
+    }
+
+    [Drop]
+    private void Drop()
+    {
+        if (ExchangeUtils.ExchangePtr(ref m_ptr, null, out var ptr) is null) return;
+        ptr->Release();
+    }
+
+    #endregion
+
+    #region ObjectPool
+
+    internal ObjectPool ObjectPool { get; } = new();
+    internal ObjectPool<Pass> PassPool { get; } = ObjectPool.Create<Pass>();
+    [Drop]
+    internal ObjectPool<CommandBuffer> CommandBufferPool { get; }
+
+    #endregion
 
     private readonly List<Pass> passes = new();
 
+    #region State
+
+    private bool IsRecording { get; set; }
+
     private GraphicSurface Surface = null!;
     private FramedData FramedData = new();
+
+    #endregion
+
+    #region Pass
 
     internal class Pass
     {
@@ -30,6 +69,10 @@ public sealed class RenderGraph
         }
     }
 
+    #endregion
+
+    #region Recording
+
     public void BeginRecording(GraphicSurface surface)
     {
         Surface = surface;
@@ -37,15 +80,20 @@ public sealed class RenderGraph
         IsRecording = true;
         Rendering.ReadyFrame();
 
-        FramedData.SurfaceSize = surface.PixelSize;
+        FramedData.SurfaceSize = surface.Size;
     }
 
     public void EndRecordingAndExecute()
     {
-        IsRecording = false;
+        Compile();
         // todo
         Rendering.EndFrame();
+        IsRecording = false;
     }
+
+    #endregion
+
+    #region AddPass
 
     public PassBuilder<T> AddPass<T>(string name, out T data) where T : class, new()
     {
@@ -63,7 +111,20 @@ public sealed class RenderGraph
         if (func is null) throw new ArgumentNullException(nameof(func), $"Pass {pass.Name} no render func is set");
         ((RenderGraphRenderFunc<T>)func)(ctx, (T)data);
     }
+
+    #endregion
+
+    #region Compile
+
+    private void Compile()
+    {
+        foreach (var pass in passes) { }
+    }
+
+    #endregion
 }
+
+#region PassBuilder
 
 public struct PassBuilder<T>
 {
@@ -74,19 +135,19 @@ public struct PassBuilder<T>
         Pass = pass;
     }
 
+    #region SetRenderFunc
+
     public void SetRenderFunc(RenderGraphRenderFunc<T> func)
     {
         Pass.RenderFunc = func;
     }
 
-    public PipelineHandle UsePipeline(Shader shader, int pass) => UsePipeline(shader[pass]);
-    public PipelineHandle UsePipeline(Shader shader, string pass) => UsePipeline(shader[pass]);
-    public PipelineHandle UsePipeline(ShaderPass pass)
-    {
-        // todo
-        return default;
-    }
+    #endregion
 }
+
+#endregion
+
+#region RenderGraphRenderFunc RenderGraphExecRenderFunc
 
 public delegate void RenderGraphRenderFunc<in T>(RenderGraphContext ctx, T data);
 
@@ -94,21 +155,31 @@ internal delegate void RenderGraphExecRenderFunc(
     RenderGraph.Pass pass, RenderGraphContext ctx, object data, object? func
 );
 
+#endregion
+
+#region RenderGraphContext
+
 public ref struct RenderGraphContext
 {
     public RenderingManager Rendering;
-    public GraphicSurface GraphicSurface;
+    public GraphicSurface Surface;
     public CommandBuffer cmd;
     public ref readonly FramedData FramedData;
 }
+
+#endregion
+
+#region FramedData
 
 public struct FramedData
 {
     public uint2 SurfaceSize;
 }
 
-public record struct PipelineHandle(uint Id);
+#endregion
 
-public record struct TextureHandle(uint Id);
+#region RtHandle
 
-public record struct BufferHandle(uint Id);
+public record struct RtHandle(uint Id);
+
+#endregion

@@ -427,6 +427,14 @@ namespace Game.Native
             FError result;
             return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[19]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CreateShaderPass([NativeTypeName("const FShaderPassData *")] FShaderPassData* data, [NativeTypeName("FShaderPass *&")] FShaderPass** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FShaderPassData*, FShaderPass**, FError*>)(lpVtbl[20]))((FApp*)Unsafe.AsPointer(ref this), &result, data, @out);
+        }
     }
 
     public unsafe partial struct AppFnVtb
@@ -759,18 +767,26 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError MakeContext([NativeTypeName("cc::FWindowHandle *")] FWindowHandle* window_handle, FRenderingContext** @out)
+        public FError MakeContext([NativeTypeName("cc::FWindowHandle *")] FWindowHandle* window_handle, FGraphicSurface** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FWindowHandle*, FRenderingContext**, FError*>)(lpVtbl[10]))((FRendering*)Unsafe.AsPointer(ref this), &result, window_handle, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FWindowHandle*, FGraphicSurface**, FError*>)(lpVtbl[10]))((FRendering*)Unsafe.AsPointer(ref this), &result, window_handle, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError CreateGraphicsShaderPipeline([NativeTypeName("cc::FShaderPassData *")] FShaderPassData* pass, FGraphicsShaderPipeline** @out)
+        public FError CreateGraph(FGpuGraph** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FShaderPassData*, FGraphicsShaderPipeline**, FError*>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this), &result, pass, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuGraph**, FError*>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CreateGraphicsShaderPipeline([NativeTypeName("const FShaderPassData *")] FShaderPassData* pass, [NativeTypeName("const GraphicsPipelineFormatOverride *")] GraphicsPipelineFormatOverride* @override, FGraphicsShaderPipeline** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FShaderPassData*, GraphicsPipelineFormatOverride*, FGraphicsShaderPipeline**, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, pass, @override, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -778,7 +794,7 @@ namespace Game.Native
         public FError CreateBuffer([NativeTypeName("const FGpuBufferCreateOptions *")] FGpuBufferCreateOptions* options, FGpuBuffer** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuBufferCreateOptions*, FGpuBuffer**, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, options, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuBufferCreateOptions*, FGpuBuffer**, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result, options, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -786,7 +802,7 @@ namespace Game.Native
         public FError ReadyFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -794,7 +810,7 @@ namespace Game.Native
         public FError EndFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[15]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -802,7 +818,7 @@ namespace Game.Native
         public FError GetDevice(void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[15]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -810,28 +826,39 @@ namespace Game.Native
         public FError CurrentCommandList(void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError ClearSurface([NativeTypeName("cc::FRenderingContext *")] FRenderingContext* ctx, [NativeTypeName("cc::float4")] float4 color)
+        public FError ClearSurface([NativeTypeName("cc::FGraphicSurface *")] FGraphicSurface* ctx, [NativeTypeName("cc::float4")] float4 color)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, float4, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGraphicSurface*, float4, FError*>)(lpVtbl[18]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
-        public FError CurrentFrameRtv([NativeTypeName("cc::FRenderingContext *")] FRenderingContext* ctx, void** @out)
+        public FError CurrentFrameRtv([NativeTypeName("cc::FGraphicSurface *")] FGraphicSurface* ctx, void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FRenderingContext*, void**, FError*>)(lpVtbl[18]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGraphicSurface*, void**, FError*>)(lpVtbl[19]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
         }
     }
 
-    [NativeTypeName("struct FRenderingContext : cc::IObject, cc::FGpuConsts")]
-    public unsafe partial struct FRenderingContext
+    public unsafe partial struct FGraphicSurfaceData
+    {
+        public void* current_frame_rtv;
+
+        [NativeTypeName("cc::uint2")]
+        public uint2 size;
+
+        [NativeTypeName("cc::TextureFormat")]
+        public TextureFormat format;
+    }
+
+    [NativeTypeName("struct FGraphicSurface : cc::IObject, cc::FGpuConsts")]
+    public unsafe partial struct FGraphicSurface
     {
         public void** lpVtbl;
 
@@ -841,61 +868,61 @@ namespace Game.Native
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            ((delegate* unmanaged[Thiscall]<FRenderingContext*, void>)(lpVtbl[0]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            ((delegate* unmanaged[Thiscall]<FGraphicSurface*, void>)(lpVtbl[0]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("size_t")]
         public nuint AddRef()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[1]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, nuint>)(lpVtbl[1]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("size_t")]
         public nuint Release()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[2]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, nuint>)(lpVtbl[2]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("size_t")]
         public nuint AddRefWeak()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[3]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, nuint>)(lpVtbl[3]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("size_t")]
         public nuint ReleaseWeak()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, nuint>)(lpVtbl[4]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, nuint>)(lpVtbl[4]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::b8")]
         public B8 TryDowngrade()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, B8>)(lpVtbl[5]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, B8>)(lpVtbl[5]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::b8")]
         public B8 TryUpgrade()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, B8>)(lpVtbl[6]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, B8>)(lpVtbl[6]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void* ObjectStart()
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, void*>)(lpVtbl[7]))((FRenderingContext*)Unsafe.AsPointer(ref this));
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, void*>)(lpVtbl[7]))((FGraphicSurface*)Unsafe.AsPointer(ref this));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
         {
-            return ((delegate* unmanaged[Thiscall]<FRenderingContext*, Guid, void*>)(lpVtbl[8]))((FRenderingContext*)Unsafe.AsPointer(ref this), id);
+            return ((delegate* unmanaged[Thiscall]<FGraphicSurface*, Guid, void*>)(lpVtbl[8]))((FGraphicSurface*)Unsafe.AsPointer(ref this), id);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -903,7 +930,15 @@ namespace Game.Native
         public FError Destroy()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRenderingContext*, FError*, FError*>)(lpVtbl[9]))((FRenderingContext*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FGraphicSurface*, FError*, FError*>)(lpVtbl[9]))((FGraphicSurface*)Unsafe.AsPointer(ref this), &result);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError DataPtr(FGraphicSurfaceData** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGraphicSurface*, FError*, FGraphicSurfaceData**, FError*>)(lpVtbl[10]))((FGraphicSurface*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -911,7 +946,7 @@ namespace Game.Native
         public FError OnResize([NativeTypeName("cc::uint2")] uint2 size)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRenderingContext*, FError*, uint2, FError*>)(lpVtbl[10]))((FRenderingContext*)Unsafe.AsPointer(ref this), &result, size);
+            return *((delegate* unmanaged[Thiscall]<FGraphicSurface*, FError*, uint2, FError*>)(lpVtbl[11]))((FGraphicSurface*)Unsafe.AsPointer(ref this), &result, size);
         }
     }
 
@@ -1245,13 +1280,73 @@ namespace Game.Native
         public B8 uav;
     }
 
-    public partial struct FGpuGraphConsts
+    [NativeTypeName("struct FGpuGraph : cc::IObject")]
+    public unsafe partial struct FGpuGraph
     {
-        [NativeTypeName("const u32")]
-        public const uint NullViewId = 0;
+        public void** lpVtbl;
 
-        [NativeTypeName("const u32")]
-        public const uint SurfaceRtvId = 0xffffffff - 1;
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "e3f38929-74e9-4df0-8001-e82eed2a23f7";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FGpuGraph*, void>)(lpVtbl[0]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, nuint>)(lpVtbl[1]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, nuint>)(lpVtbl[2]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, nuint>)(lpVtbl[3]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, nuint>)(lpVtbl[4]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, B8>)(lpVtbl[5]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, B8>)(lpVtbl[6]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, void*>)(lpVtbl[7]))((FGpuGraph*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FGpuGraph*, Guid, void*>)(lpVtbl[8]))((FGpuGraph*)Unsafe.AsPointer(ref this), id);
+        }
     }
 
     [NativeTypeName("cc::u8")]
@@ -1263,7 +1358,7 @@ namespace Game.Native
         SetRt,
         SetViewPort,
         SetScissorRect,
-        SetPipeline,
+        SetShader,
         DrawInstanced,
         Dispatch,
         DispatchMesh,
@@ -1271,38 +1366,35 @@ namespace Game.Native
 
     public partial struct FGpuCommandClearRtv
     {
-        [NativeTypeName("cc::u32")]
-        public uint rtv;
+        [NativeTypeName("cc::f32")]
+        public float color_r;
 
-        [NativeTypeName("f32[4]")]
-        public _color_e__FixedBuffer color;
+        [NativeTypeName("cc::f32")]
+        public float color_g;
+
+        [NativeTypeName("cc::f32")]
+        public float color_b;
+
+        [NativeTypeName("cc::f32")]
+        public float color_a;
 
         [NativeTypeName("cc::u32")]
         public uint rects;
-
-        [InlineArray(4)]
-        public partial struct _color_e__FixedBuffer
-        {
-            public float e0;
-        }
     }
 
     public partial struct FGpuCommandClearDsv
     {
         [NativeTypeName("cc::u32")]
-        public uint dsv;
-
-        [NativeTypeName("__AnonymousRecord_Rendering_L174_C13")]
-        public _flags_e__Struct flags;
-
-        [NativeTypeName("cc::u8")]
-        public byte stencil;
+        public uint rects;
 
         [NativeTypeName("cc::f32")]
         public float depth;
 
-        [NativeTypeName("cc::u32")]
-        public uint rects;
+        [NativeTypeName("cc::u8")]
+        public byte stencil;
+
+        [NativeTypeName("__AnonymousRecord_Rendering_L194_C13")]
+        public _flags_e__Struct flags;
 
         public partial struct _flags_e__Struct
         {
@@ -1344,29 +1436,26 @@ namespace Game.Native
 
     public partial struct FGpuCommandSetRt
     {
-        [NativeTypeName("cc::u32")]
-        public uint dsv;
-
-        [NativeTypeName("cc::u32")]
-        public uint rtv_count;
+        [NativeTypeName("cc::u8")]
+        public byte rtv_count;
     }
 
     public partial struct FGpuCommandSetViewPort
     {
-        [NativeTypeName("cc::u32")]
-        public uint count;
+        [NativeTypeName("cc::u8")]
+        public byte count;
     }
 
     public partial struct FGpuCommandSetScissorRect
     {
-        [NativeTypeName("cc::u32")]
-        public uint count;
+        [NativeTypeName("cc::u8")]
+        public byte count;
     }
 
-    public partial struct FGpuCommandSetPipeline
+    public unsafe partial struct FGpuCommandSetShader
     {
-        [NativeTypeName("cc::u32")]
-        public uint pipeline;
+        [NativeTypeName("cc::FShaderPass *")]
+        public FShaderPass* pass;
     }
 
     public partial struct FGpuCommandDrawInstanced
@@ -1386,14 +1475,14 @@ namespace Game.Native
 
     public partial struct FGpuCommandDispatch
     {
-        [NativeTypeName("u32[3]")]
-        public _thread_group_count_e__FixedBuffer thread_group_count;
+        [NativeTypeName("cc::u32")]
+        public uint thread_group_count_x;
 
-        [InlineArray(3)]
-        public partial struct _thread_group_count_e__FixedBuffer
-        {
-            public uint e0;
-        }
+        [NativeTypeName("cc::u32")]
+        public uint thread_group_count_y;
+
+        [NativeTypeName("cc::u32")]
+        public uint thread_group_count_z;
     }
 
     public unsafe partial struct FGpuStreamCommands
@@ -1795,6 +1884,24 @@ namespace Game.Native
         }
     }
 
+    public partial struct GraphicsPipelineFormatOverride
+    {
+        [NativeTypeName("int32_t")]
+        public int rt_count;
+
+        [NativeTypeName("TextureFormat[8]")]
+        public _rtv_formats_e__FixedBuffer rtv_formats;
+
+        [NativeTypeName("cc::TextureFormat")]
+        public TextureFormat dsv_format;
+
+        [InlineArray(8)]
+        public partial struct _rtv_formats_e__FixedBuffer
+        {
+            public TextureFormat e0;
+        }
+    }
+
     [NativeTypeName("uint8_t")]
     public enum ShaderStage : byte
     {
@@ -1909,6 +2016,86 @@ namespace Game.Native
         public partial struct _modules_e__FixedBuffer
         {
             public FrBlob e0;
+        }
+    }
+
+    [NativeTypeName("struct FShaderPass : cc::IObject")]
+    public unsafe partial struct FShaderPass
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "60e8339a-dfc0-4f91-8550-d14a3836e3c3";
+
+        [NativeTypeName("const size_t")]
+        public const nuint MaxModules = 3;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FShaderPass*, void>)(lpVtbl[0]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, nuint>)(lpVtbl[1]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, nuint>)(lpVtbl[2]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, nuint>)(lpVtbl[3]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, nuint>)(lpVtbl[4]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, B8>)(lpVtbl[5]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, B8>)(lpVtbl[6]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, void*>)(lpVtbl[7]))((FShaderPass*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FShaderPass*, Guid, void*>)(lpVtbl[8]))((FShaderPass*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError DataPtr(FShaderPassData** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FShaderPass*, FError*, FShaderPassData**, FError*>)(lpVtbl[9]))((FShaderPass*)Unsafe.AsPointer(ref this), &result, @out);
         }
     }
 

@@ -69,5 +69,6 @@ namespace cc
 
         FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept override;
         FError CreateRendering(FRendering*& out) noexcept override;
+        FError CreateShaderPass(const FShaderPassData* data, FShaderPass*& out) noexcept override;
     };
 }

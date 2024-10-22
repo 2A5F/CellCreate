@@ -12,7 +12,7 @@
 namespace cc
 {
     class Queue;
-    class RenderingContext;
+    class GraphicSurface;
     class DescriptorSet;
 
     class Rendering final : public Object<FRendering>
@@ -40,7 +40,7 @@ namespace cc
 
         FRenderingState m_state{};
 
-        HashMap<size_t, Rc<RenderingContext>> m_contexts{};
+        HashMap<size_t, Rc<GraphicSurface>> m_contexts{};
         DWORD m_callback_cookie{};
 
     protected:
@@ -68,9 +68,13 @@ namespace cc
 
         FRenderingState* StatePtr() noexcept override;
 
-        FError MakeContext(FWindowHandle* window_handle, FRenderingContext** out) noexcept override;
+        FError MakeContext(FWindowHandle* window_handle, FGraphicSurface** out) noexcept override;
 
-        FError CreateGraphicsShaderPipeline(FShaderPassData* pass, FGraphicsShaderPipeline** out) noexcept override;
+        FError CreateGraph(FGpuGraph** out) noexcept override;
+        FError CreateGraphicsShaderPipeline(
+            const FShaderPassData* pass, /* opt */const GraphicsPipelineFormatOverride* override,
+            FGraphicsShaderPipeline** out
+        ) noexcept override;
         FError CreateBuffer(const FGpuBufferCreateOptions* options, FGpuBuffer** out) noexcept override;
 
         FError ReadyFrame() noexcept override;
@@ -79,8 +83,8 @@ namespace cc
         FError GetDevice(void** out) noexcept override;
         FError CurrentCommandList(void** out) noexcept override;
 
-        FError ClearSurface(FRenderingContext* ctx, float4 color) noexcept override;
-        FError CurrentFrameRtv(FRenderingContext* ctx, void** out) noexcept override;
+        FError ClearSurface(FGraphicSurface* ctx, float4 color) noexcept override;
+        FError CurrentFrameRtv(FGraphicSurface* ctx, void** out) noexcept override;
     };
 
     class Queue final : public FGpuConsts
@@ -109,7 +113,7 @@ namespace cc
         void ReSet(UINT32 index);
     };
 
-    class RenderingContext final : public Object<FRenderingContext>
+    class GraphicSurface final : public Object<FGraphicSurface>
     {
         IMPL_OBJECT();
 
@@ -127,6 +131,12 @@ namespace cc
         UINT m_rtv_descriptor_size{};
         UINT m_frame_index{};
 
+        FGraphicSurfaceData m_data{
+            .current_frame_rtv = nullptr,
+            .size = {0, 0},
+            .format = TextureFormat::R8G8B8A8_UNorm,
+        };
+
         uint2 m_current_size{};
         uint2 m_new_size{};
         DXGI_FORMAT m_format{DXGI_FORMAT_R8G8B8A8_UNORM};
@@ -136,7 +146,7 @@ namespace cc
         void re_create_rts();
         void do_re_size();
 
-        explicit RenderingContext(Rendering* rendering, FWindowHandle* window, void* hwnd, uint2 size);
+        explicit GraphicSurface(Rendering* rendering, FWindowHandle* window, void* hwnd, uint2 size);
 
         void ReadyFrame(ID3D12GraphicsCommandList6* list);
         void EndFrame(ID3D12GraphicsCommandList6* list);
@@ -144,6 +154,8 @@ namespace cc
 
     public:
         FError Destroy() noexcept override;
+
+        FError DataPtr(FGraphicSurfaceData** out) noexcept override;
 
         FError OnResize(uint2 size) noexcept override;
     };
@@ -179,6 +191,19 @@ namespace cc
         void ReadyFrame();
     };
 
+    class ShaderPass final : public Object<FShaderPass>
+    {
+        IMPL_OBJECT();
+
+    public:
+        List<char> m_modules[MaxModules];
+        FShaderPassData m_data;
+
+        explicit ShaderPass(const FShaderPassData* data);
+
+        FError DataPtr(FShaderPassData** out) noexcept override;
+    };
+
     class GraphicsShaderPipeline final : public Object<FGraphicsShaderPipeline>
     {
         IMPL_OBJECT();
@@ -189,7 +214,10 @@ namespace cc
         GraphicsPipelineState m_state{};
         bool m_is_mesh_shader{};
 
-        explicit GraphicsShaderPipeline(Rc<Rendering>&& rendering, FShaderPassData* pass);
+        explicit GraphicsShaderPipeline(
+            Rc<Rendering>&& rendering, const FShaderPassData* pass, /* opt */
+            const GraphicsPipelineFormatOverride* override
+        );
 
         FError RawPtr(void** out) const noexcept override;
         FError StatePtr(const GraphicsPipelineState** out) const noexcept override;

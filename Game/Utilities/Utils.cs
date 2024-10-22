@@ -23,4 +23,11 @@ public static class Utils
         if (dict.TryGetValue(key, out var value)) return value;
         return dict[key] = factory(key);
     }
+
+    public static V GetOrAdd<K, V, A>(this Dictionary<K, V> dict, K key, A arg, Func<A, K, V> factory)
+        where K : notnull
+    {
+        if (dict.TryGetValue(key, out var value)) return value;
+        return dict[key] = factory(arg, key);
+    }
 }
