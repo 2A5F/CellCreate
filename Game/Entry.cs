@@ -3,6 +3,7 @@ using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Game.Native;
 using Game.Utilities;
 using Serilog;
@@ -33,6 +34,8 @@ internal static class Entry
 
         App.s_appVars = init_params->p_vas;
         App.s_native_app = init_params->p_native_app;
+        
+        RandomNumberGenerator.Fill(new Span<byte>(&App.s_appVars->a_hash_rand_0, sizeof(ulong) * 4));
 
         ref var fn_vtb = ref *init_result->fn_vtb;
         fn_vtb.main = &Main;

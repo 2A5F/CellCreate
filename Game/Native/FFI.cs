@@ -427,14 +427,6 @@ namespace Game.Native
             FError result;
             return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[19]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NativeTypeName("cc::FError")]
-        public FError CreateShaderPass([NativeTypeName("const FShaderPassData *")] FShaderPassData* data, [NativeTypeName("FShaderPass *&")] FShaderPass** @out)
-        {
-            FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FShaderPassData*, FShaderPass**, FError*>)(lpVtbl[20]))((FApp*)Unsafe.AsPointer(ref this), &result, data, @out);
-        }
     }
 
     public unsafe partial struct AppFnVtb
@@ -457,6 +449,18 @@ namespace Game.Native
 
     public partial struct AppVars
     {
+        [NativeTypeName("cc::u64")]
+        public ulong a_hash_rand_0;
+
+        [NativeTypeName("cc::u64")]
+        public ulong a_hash_rand_1;
+
+        [NativeTypeName("cc::u64")]
+        public ulong a_hash_rand_2;
+
+        [NativeTypeName("cc::u64")]
+        public ulong a_hash_rand_3;
+
         [NativeTypeName("cc::b8")]
         public B8 debug;
 
@@ -671,10 +675,6 @@ namespace Game.Native
         public const uint FrameCount = 3;
     }
 
-    public partial struct FCommandList
-    {
-    }
-
     public partial struct FRenderingState
     {
         [NativeTypeName("uint64_t")]
@@ -775,10 +775,18 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
+        public FError CreateShaderPass([NativeTypeName("const FShaderPassData *")] FShaderPassData* data, FShaderPass** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FShaderPassData*, FShaderPass**, FError*>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this), &result, data, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
         public FError CreateGraph(FGpuGraph** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuGraph**, FError*>)(lpVtbl[11]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuGraph**, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -786,7 +794,7 @@ namespace Game.Native
         public FError CreateGraphicsShaderPipeline([NativeTypeName("const FShaderPassData *")] FShaderPassData* pass, [NativeTypeName("const GraphicsPipelineFormatOverride *")] GraphicsPipelineFormatOverride* @override, FGraphicsShaderPipeline** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FShaderPassData*, GraphicsPipelineFormatOverride*, FGraphicsShaderPipeline**, FError*>)(lpVtbl[12]))((FRendering*)Unsafe.AsPointer(ref this), &result, pass, @override, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FShaderPassData*, GraphicsPipelineFormatOverride*, FGraphicsShaderPipeline**, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result, pass, @override, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -794,7 +802,7 @@ namespace Game.Native
         public FError CreateBuffer([NativeTypeName("const FGpuBufferCreateOptions *")] FGpuBufferCreateOptions* options, FGpuBuffer** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuBufferCreateOptions*, FGpuBuffer**, FError*>)(lpVtbl[13]))((FRendering*)Unsafe.AsPointer(ref this), &result, options, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGpuBufferCreateOptions*, FGpuBuffer**, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result, options, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -802,7 +810,7 @@ namespace Game.Native
         public FError ReadyFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[14]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[15]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -810,7 +818,7 @@ namespace Game.Native
         public FError EndFrame()
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[15]))((FRendering*)Unsafe.AsPointer(ref this), &result);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -818,7 +826,7 @@ namespace Game.Native
         public FError GetDevice(void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[16]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -826,7 +834,7 @@ namespace Game.Native
         public FError CurrentCommandList(void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[17]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, void**, FError*>)(lpVtbl[18]))((FRendering*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -834,7 +842,7 @@ namespace Game.Native
         public FError ClearSurface([NativeTypeName("cc::FGraphicSurface *")] FGraphicSurface* ctx, [NativeTypeName("cc::float4")] float4 color)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGraphicSurface*, float4, FError*>)(lpVtbl[18]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGraphicSurface*, float4, FError*>)(lpVtbl[19]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, color);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -842,7 +850,7 @@ namespace Game.Native
         public FError CurrentFrameRtv([NativeTypeName("cc::FGraphicSurface *")] FGraphicSurface* ctx, void** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGraphicSurface*, void**, FError*>)(lpVtbl[19]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
+            return *((delegate* unmanaged[Thiscall]<FRendering*, FError*, FGraphicSurface*, void**, FError*>)(lpVtbl[20]))((FRendering*)Unsafe.AsPointer(ref this), &result, ctx, @out);
         }
     }
 
@@ -1438,6 +1446,9 @@ namespace Game.Native
     {
         [NativeTypeName("cc::u8")]
         public byte rtv_count;
+
+        [NativeTypeName("cc::b8")]
+        public B8 has_dsv;
     }
 
     public partial struct FGpuCommandSetViewPort
@@ -2096,6 +2107,14 @@ namespace Game.Native
         {
             FError result;
             return *((delegate* unmanaged[Thiscall]<FShaderPass*, FError*, FShaderPassData**, FError*>)(lpVtbl[9]))((FShaderPass*)Unsafe.AsPointer(ref this), &result, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError GetOrCreateGraphicsPipeline([NativeTypeName("const GraphicsPipelineFormatOverride *")] GraphicsPipelineFormatOverride* @override, FGraphicsShaderPipeline** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FShaderPass*, FError*, GraphicsPipelineFormatOverride*, FGraphicsShaderPipeline**, FError*>)(lpVtbl[10]))((FShaderPass*)Unsafe.AsPointer(ref this), &result, @override, @out);
         }
     }
 

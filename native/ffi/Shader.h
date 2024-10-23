@@ -7,6 +7,8 @@
 
 namespace cc
 {
+    struct FGraphicsShaderPipeline;
+
     // 语义化的 bool 值
     enum class Switch : uint8_t
     {
@@ -265,6 +267,31 @@ namespace cc
             TextureFormat::R8G8B8A8_UNorm, TextureFormat::R8G8B8A8_UNorm,
         };
         TextureFormat dsv_format{TextureFormat::D24_UNorm_S8_UInt};
+
+        #if CO_SRC
+        using Self = GraphicsPipelineFormatOverride;
+
+        struct Hash
+        {
+            std::size_t operator()(Self const& s) const;
+        };
+
+        struct Eq
+        {
+            constexpr bool operator()(
+                const Self& l, const Self& r
+            ) const
+            {
+                if (l.rt_count != r.rt_count) return false;
+                if (l.dsv_format != r.dsv_format) return false;
+                for (auto i = 0; i < l.rt_count; ++i)
+                {
+                    if (l.rtv_formats[i] != r.rtv_formats[i]) return false;
+                }
+                return true;
+            }
+        };
+        #endif
     };
 
     enum class ShaderStage : uint8_t
@@ -302,6 +329,10 @@ namespace cc
         constexpr static size_t MaxModules = 3;
 
         virtual FError DataPtr(FShaderPassData** out) noexcept = 0;
+
+        virtual FError GetOrCreateGraphicsPipeline(
+            const GraphicsPipelineFormatOverride* override, FGraphicsShaderPipeline** out
+        ) noexcept = 0;
     };
 
     struct FShaderPipeline : IObject

@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -15,6 +16,7 @@ namespace Game.Rendering;
 
 public record Shader(string Path, Guid Id)
 {
+    public required RenderingManager Rendering { get; init; }
     internal ShaderPass[] Passes { get; init; } = null!;
     internal FrozenDictionary<string, ShaderPass> NameToPass { get; init; } = null!;
 
@@ -135,7 +137,7 @@ public unsafe partial class ShaderPass
         static FShaderPass* CreateStage2(FShaderPassData* pass_data)
         {
             FShaderPass* ptr;
-            App.s_native_app->CreateShaderPass(pass_data, &ptr).TryThrow();
+            App.Rendering.m_ptr->CreateShaderPass(pass_data, &ptr).TryThrow();
             return ptr;
         }
     }
@@ -149,14 +151,16 @@ public unsafe partial class ShaderPass
 
     #region Todo : remove
 
-    internal Dictionary<PipelineRtOverride, ShaderPipeline> PipelineStates { get; } = new();
+    internal ConcurrentDictionary<PipelineRtOverride, ShaderPipeline> PipelineStates { get; } = new();
 
-    public ShaderPipeline GetOrCreateGraphicsShaderPipeline(PipelineRtOverride index)
+    public ShaderPipeline GetOrCreateGraphicsShaderPipeline(PipelineRtOverride rtOverride)
     {
-        if (PipelineStates.TryGetValue(index, out var pipelineState)) return pipelineState;
-        else pipelineState = new GraphicsShaderPipeline(this, index);
-        PipelineStates[index] = pipelineState;
-        return pipelineState;
+        return PipelineStates.GetOrAdd(rtOverride, static (rtOverride, pass) =>
+        {
+            FGraphicsShaderPipeline* ptr;
+            pass.m_ptr->GetOrCreateGraphicsPipeline(&rtOverride.m_native, &ptr).TryThrow();
+            return new GraphicsShaderPipeline(pass, rtOverride, ptr);
+        }, this);
     }
 
     #endregion
@@ -239,7 +243,12 @@ public static class Shaders
             pass.Index = index;
         }
 
-        var r = new Shader(path, id) { Passes = passes, NameToPass = by_name };
+        var r = new Shader(path, id)
+        {
+            Rendering = App.Rendering,
+            Passes = passes,
+            NameToPass = by_name,
+        };
 
         foreach (var pass in passes)
         {

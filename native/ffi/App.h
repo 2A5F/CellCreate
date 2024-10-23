@@ -45,6 +45,5 @@ namespace cc
 
         virtual FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept = 0;
         virtual FError CreateRendering(FRendering*& out) noexcept = 0;
-        virtual FError CreateShaderPass(const FShaderPassData* data, FShaderPass*& out) noexcept = 0;
     };
 }

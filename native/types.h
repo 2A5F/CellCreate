@@ -3,9 +3,16 @@
 #include <cstdint>
 #ifdef CO_SRC
 #include <memory>
+#include <shared_mutex>
+
 #include <glm/glm.hpp>
 #include <winrt/base.h>
 #include <ankerl/unordered_dense.h>
+#include <parallel_hashmap/phmap.h>
+
+#include "./utils/RwLock.h"
+#include "./utils/hash_eq.h"
+#include "./utils/CoMapSet.h"
 #endif
 
 namespace cc
@@ -27,6 +34,9 @@ namespace cc
     #ifdef CO_SRC
     using f32 = glm::f32;
     using f64 = glm::f64;
+
+    using u128 = __uint128_t;
+    using i128 = __int128_t;
 
     using float2 = glm::f32vec2;
     using float3 = glm::f32vec3;
@@ -56,15 +66,40 @@ namespace cc
     template <class T>
     using List = std::vector<T>;
 
-    template <class K, class V>
-    using HashMap = ankerl::unordered_dense::map<K, V>;
+    template <class K, class V,
+        class Hash = typename T_HashOf<K, ankerl::unordered_dense::hash<K>>::Type,
+        class Eq = typename T_EqOf<K, std::equal_to<K>>::Type //,
+    >
+    using HashMap = ankerl::unordered_dense::map<K, V, Hash, Eq>;
 
-    template <class V>
-    using HashSet = ankerl::unordered_dense::set<V>;
+    template <class V,
+        class Hash = typename T_HashOf<V, ankerl::unordered_dense::hash<V>>::Type,
+        class Eq = typename T_EqOf<V, std::equal_to<V>>::Type //,
+    >
+    using HashSet = ankerl::unordered_dense::set<V, Hash, Eq>;
+
+    template <class K, class V,
+        class Hash = typename T_HashOf<K, phmap::Hash<K>>::Type,
+        class Eq = typename T_EqOf<K, phmap::EqualTo<K>>::Type //,
+    >
+    using PhHashMap = phmap::parallel_flat_hash_map<K, V,
+        Hash, Eq,
+        std::allocator<std::pair<const K, V>>, 4,
+        std::shared_mutex
+    >;
+
+    template <class V,
+        class Hash = typename T_HashOf<V, phmap::Hash<V>>::Type,
+        class Eq = typename T_EqOf<V, phmap::EqualTo<V>>::Type //,
+    >
+    using PhHashSet = phmap::parallel_flat_hash_set<V, Hash, Eq>;
 
     #else
     using f32 = float;
     using f64 = double;
+
+    struct alignas(16) u128 { u64 a; u64 b; };
+    struct alignas(16) i128 { i64 a; i64 b; };
 
     struct alignas(8)  float2 { f32 x; f32 y; };
     struct alignas(16) float3 { f32 x; f32 y; f32 z; };

@@ -68,17 +68,6 @@ FError App::CreateRendering(FRendering*& out) noexcept
     return Rendering::Create(out);
 }
 
-FError App::CreateShaderPass(const FShaderPassData* data, FShaderPass*& out) noexcept
-{
-    return ferr_back(
-        [&]
-        {
-            Rc r = new ShaderPass(data);
-            out = r.leak();
-        }
-    );
-}
-
 // true 表示允许将事件添加到队列，false 表示不允许。与 SDL_AddEventWatch 一起使用时，返回值将被忽略。
 bool App::EventFilter(const SDL_Event& event) // NOLINT(*-make-member-function-const)
 {

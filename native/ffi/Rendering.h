@@ -11,7 +11,6 @@ namespace cc
     };
 
     struct FGraphicSurface;
-    struct FCommandList;
     struct FGpuResource;
     struct FGpuBuffer;
     struct FGpuTexture;
@@ -34,6 +33,7 @@ namespace cc
 
         virtual FError MakeContext(FWindowHandle* window_handle, FGraphicSurface** out) noexcept = 0;
 
+        virtual FError CreateShaderPass(const FShaderPassData* data, FShaderPass** out) noexcept = 0;
         virtual FError CreateGraph(FGpuGraph** out) noexcept = 0;
         virtual FError CreateGraphicsShaderPipeline(
             const FShaderPassData* pass, /* opt */const GraphicsPipelineFormatOverride* override,
@@ -205,8 +205,11 @@ namespace cc
         {
             // 有多少个 rtv
             u8 rtv_count;
-            // 尾随 1 个 dsv D3D12_CPU_DESCRIPTOR_HANDLE
+            b8 has_dsv;
+            // 尾随 has_dsv ? 1 : 0 个 dsv D3D12_CPU_DESCRIPTOR_HANDLE
             // 尾随 rtv_count 个 rtv D3D12_CPU_DESCRIPTOR_HANDLE
+            // 尾随 has_dsv ? 1 : 0 个 TextureFormat
+            // 尾随 rtv_count 个 TextureFormat
         };
 
         struct FGpuCommandSetViewPort

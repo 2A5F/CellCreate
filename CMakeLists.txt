@@ -59,6 +59,8 @@ add_definitions(-DGLM_FORCE_UNRESTRICTED_GENTYPE)
 add_definitions(-DGLM_FORCE_QUAT_DATA_XYZW)
 add_definitions(-DCO_SRC)
 
+add_definitions(-march=skylake)
+
 add_executable(${PROJECT_NAME} native/main.cpp
         third_party/D3D12MemoryAllocator/include/D3D12MemAlloc.h
         third_party/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp
@@ -86,8 +88,16 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/rendering/gpu_convert.h
         native/rendering/GpuResource.cc
         native/rendering/GpuResource.h
-        native/RenderGraph.cc
-        native/RenderGraph.h
+        native/rendering/RenderGraph.cc
+        native/rendering/RenderGraph.h
+        native/rendering/CmdEncoder.cc
+        native/rendering/CmdEncoder.h
+        native/utils/HashCode.cc
+        native/utils/HashCode.h
+        native/utils/CoMapSet.h
+        native/utils/hash_eq.h
+        native/utils/bitcount.h
+        native/utils/RwLock.h
 )
 
 if (WIN32)
@@ -102,6 +112,7 @@ add_subdirectory(third_party/mimalloc EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/SDL EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/D3D12MemoryAllocator EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cpptrace EXCLUDE_FROM_ALL)
+add_subdirectory(third_party/parallel-hashmap EXCLUDE_FROM_ALL)
 find_package(cppwinrt CONFIG REQUIRED)
 find_package(directx-headers CONFIG REQUIRED)
 find_package(directx12-agility CONFIG REQUIRED)
@@ -118,6 +129,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE ${PACKAGE_PREFIX_DIR}/lib)
 target_include_directories(${PROJECT_NAME} PRIVATE third_party/D3D12MemoryAllocator/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native)
 target_link_directories(${PROJECT_NAME} PRIVATE ${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native)
+target_include_directories(${PROJECT_NAME} PRIVATE third_party/parallel-hashmap)
 target_link_libraries(${PROJECT_NAME} PRIVATE mimalloc)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)

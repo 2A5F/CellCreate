@@ -10,3 +10,6 @@
 [submodule "third_party/cpptrace"]
 	path = third_party/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace
+[submodule "third_party/parallel-hashmap"]
+	path = third_party/parallel-hashmap
+	url = https://github.com/greg7mdp/parallel-hashmap

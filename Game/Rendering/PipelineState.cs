@@ -69,7 +69,8 @@ public sealed unsafe partial class GraphicsShaderPipeline : ShaderPipeline
     public ref readonly GraphicsPipelineState State => ref *m_state;
 
     internal GraphicsShaderPipeline(ShaderPass pass) : this(pass, false, in Unsafe.NullRef<PipelineRtOverride>()) { }
-    internal GraphicsShaderPipeline(ShaderPass pass, in PipelineRtOverride rtOverride) : this(pass, true, in rtOverride) { }
+    internal GraphicsShaderPipeline(ShaderPass pass, in PipelineRtOverride rtOverride) :
+        this(pass, true, in rtOverride) { }
     internal GraphicsShaderPipeline(ShaderPass pass, bool override_format, in PipelineRtOverride rtOverride)
     {
         if ((pass.Stages & ShaderStages.Cs) != 0)
@@ -86,6 +87,18 @@ public sealed unsafe partial class GraphicsShaderPipeline : ShaderPipeline
                 pass.m_data, override_format ? &p_rtInfo->m_native : null, &ptr
             ).TryThrow();
         }
+        m_ptr = ptr;
+        GraphicsPipelineState* p_state;
+        m_ptr->StatePtr(&p_state).TryThrow();
+        m_state = p_state;
+
+        if (App.Vars.debug)
+            Log.Debug("Created pipeline state of shader pass [\"{Shader}\"::\"{Pass}\"] with {RtInfo}",
+                pass.Shader.Path, pass.Name, rtOverride);
+    }
+
+    internal GraphicsShaderPipeline(ShaderPass pass, in PipelineRtOverride rtOverride, FGraphicsShaderPipeline* ptr)
+    {
         m_ptr = ptr;
         GraphicsPipelineState* p_state;
         m_ptr->StatePtr(&p_state).TryThrow();

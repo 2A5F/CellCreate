@@ -6,5 +6,6 @@
     <mapping directory="$PROJECT_DIR$/third_party/SDL" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/cpptrace" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/mimalloc" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/parallel-hashmap" vcs="Git" />
   </component>
 </project>

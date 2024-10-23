@@ -284,6 +284,10 @@ namespace cc
 
     struct AppVars
     {
+        u64 a_hash_rand_0{};
+        u64 a_hash_rand_1{};
+        u64 a_hash_rand_2{};
+        u64 a_hash_rand_3{};
         b8 debug{false};
         b8 running{true};
     };

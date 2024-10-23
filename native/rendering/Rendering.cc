@@ -8,7 +8,8 @@
 #include "../utils/error.h"
 #include "./gpu_convert.h"
 #include "GpuResource.h"
-#include "../RenderGraph.h"
+#include "RenderGraph.h"
+#include "../utils/HashCode.h"
 
 using namespace cc;
 
@@ -333,6 +334,17 @@ FError Rendering::MakeContext(FWindowHandle* window_handle, FGraphicSurface** ou
         {
             Rc r = new GraphicSurface(this, window_handle, hwnd, size);
             m_contexts[r->m_id] = r;
+            *out = r.leak();
+        }
+    );
+}
+
+FError Rendering::CreateShaderPass(const FShaderPassData* data, FShaderPass** out) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            Rc r = new ShaderPass(this->CloneThis(), data);
             *out = r.leak();
         }
     );
@@ -828,7 +840,50 @@ void DescriptorSet::ReadyFrame()
     m_heap_sampler.ReadyFrame();
 }
 
-ShaderPass::ShaderPass(const FShaderPassData* data) : m_data(*data)
+std::size_t GraphicsPipelineFormatOverride::Hash::operator()(Self const& s) const
+{
+    auto hasher = AHasher::create();
+    hasher.write(static_cast<u32>(s.rt_count));
+    hasher.write(static_cast<u32>(s.dsv_format));
+    for (auto i = 0; i < s.rt_count; ++i)
+    {
+        hasher.write(static_cast<u32>(s.rtv_formats[i]));
+    }
+    return hasher.finish();
+}
+
+ShaderPassGraphicsPipelinePack::ShaderPassGraphicsPipelinePack(ShaderPass* pass) : m_pass(pass)
+{
+}
+
+Rc<GraphicsShaderPipeline> ShaderPassGraphicsPipelinePack::GetOrCreateGraphicsPipeline()
+{
+    GraphicsPipelineFormatOverride override{};
+    override.dsv_format = m_pass->m_data.state.dsv_format;
+    override.rt_count = m_pass->m_data.state.rt_count;
+    for (int i = 0; i < override.rt_count; ++i)
+    {
+        override.rtv_formats[i] = m_pass->m_data.state.rtv_formats[i];
+    }
+    return GetOrCreateGraphicsPipeline(override);
+}
+
+Rc<GraphicsShaderPipeline> ShaderPassGraphicsPipelinePack::GetOrCreateGraphicsPipeline(
+    const GraphicsPipelineFormatOverride& override
+)
+{
+    return m_graphics_pipelines.GetOrAdd(
+        override,
+        [&](auto& _)
+        {
+            Rc r = new GraphicsShaderPipeline(m_pass->m_rendering->CloneThis(), &m_pass->m_data, &override);
+            return r;
+        }
+    );
+}
+
+ShaderPass::ShaderPass(Rc<Rendering>&& rendering, const FShaderPassData* data)
+    : m_rendering(std::move(rendering)), m_data(*data)
 {
     for (auto i = 0; i < MaxModules; ++i)
     {
@@ -837,12 +892,31 @@ ShaderPass::ShaderPass(const FShaderPassData* data) : m_data(*data)
         new(&m_modules[i]) std::vector(span.begin(), span.end());
         new(&m_data.modules[i]) FrBlob(m_modules[i].data(), m_modules[i].size());
     }
+    if (!data->stages.cs)
+    {
+        m_graphics_pipelines = std::make_unique<ShaderPassGraphicsPipelinePack>(this);
+    }
 }
 
 FError ShaderPass::DataPtr(FShaderPassData** out) noexcept
 {
     *out = &m_data;
     return FError::None();
+}
+
+FError ShaderPass::GetOrCreateGraphicsPipeline(
+    const GraphicsPipelineFormatOverride* override, FGraphicsShaderPipeline** out
+) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            auto r = override == nullptr
+                ? m_graphics_pipelines->GetOrCreateGraphicsPipeline()
+                : m_graphics_pipelines->GetOrCreateGraphicsPipeline(*override);
+            *out = r.leak();
+        }
+    );
 }
 
 namespace

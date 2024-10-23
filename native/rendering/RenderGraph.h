@@ -1,6 +1,6 @@
 #pragma once
-#include "ffi/Rendering.h"
-#include "rendering/Rendering.h"
+#include "../ffi/Rendering.h"
+#include "Rendering.h"
 
 namespace cc
 {

@@ -11,6 +11,8 @@
 
 namespace cc
 {
+    class ShaderPass;
+    class GraphicsShaderPipeline;
     class Queue;
     class GraphicSurface;
     class DescriptorSet;
@@ -70,6 +72,7 @@ namespace cc
 
         FError MakeContext(FWindowHandle* window_handle, FGraphicSurface** out) noexcept override;
 
+        FError CreateShaderPass(const FShaderPassData* data, FShaderPass** out) noexcept override;
         FError CreateGraph(FGpuGraph** out) noexcept override;
         FError CreateGraphicsShaderPipeline(
             const FShaderPassData* pass, /* opt */const GraphicsPipelineFormatOverride* override,
@@ -191,17 +194,36 @@ namespace cc
         void ReadyFrame();
     };
 
+    struct ShaderPassGraphicsPipelinePack
+    {
+        using GraphicsPipelines = CoHashMap<GraphicsPipelineFormatOverride, Rc<GraphicsShaderPipeline>>;
+
+        ShaderPass* m_pass;
+        GraphicsPipelines m_graphics_pipelines{};
+
+        explicit ShaderPassGraphicsPipelinePack(ShaderPass* pass);
+
+        Rc<GraphicsShaderPipeline> GetOrCreateGraphicsPipeline();
+        Rc<GraphicsShaderPipeline> GetOrCreateGraphicsPipeline(const GraphicsPipelineFormatOverride& override);
+    };
+
     class ShaderPass final : public Object<FShaderPass>
     {
         IMPL_OBJECT();
 
     public:
+        Rc<Rendering> m_rendering;
         List<char> m_modules[MaxModules];
         FShaderPassData m_data;
+        Box<ShaderPassGraphicsPipelinePack> m_graphics_pipelines{};
 
-        explicit ShaderPass(const FShaderPassData* data);
+        explicit ShaderPass(Rc<Rendering>&& rendering, const FShaderPassData* data);
 
         FError DataPtr(FShaderPassData** out) noexcept override;
+
+        FError GetOrCreateGraphicsPipeline(
+            const GraphicsPipelineFormatOverride* override, FGraphicsShaderPipeline** out
+        ) noexcept override;
     };
 
     class GraphicsShaderPipeline final : public Object<FGraphicsShaderPipeline>

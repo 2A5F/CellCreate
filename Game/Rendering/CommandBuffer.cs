@@ -90,24 +90,51 @@ public partial class CommandBuffer
 
     #region InternalSetRt
 
-    internal unsafe void InternalSetRt(CpuDescriptorHandle dsv, ReadOnlySpan<CpuDescriptorHandle> rtvs)
+    internal unsafe void InternalSetRt(
+        CpuDescriptorHandle? dsv, ReadOnlySpan<CpuDescriptorHandle> rtvs, PipelineRtOverride formats
+    )
     {
         var data = m_data.Extra(
-            (nuint)(1 + sizeof(FGpuCommandSetRt) + sizeof(CpuDescriptorHandle) +
-                    sizeof(CpuDescriptorHandle) * rtvs.Length)
+            (nuint)(
+                1 + sizeof(FGpuCommandSetRt)
+                  + (dsv.HasValue ? sizeof(CpuDescriptorHandle) : 0)
+                  + sizeof(CpuDescriptorHandle) * rtvs.Length
+                  + (dsv.HasValue ? sizeof(TextureFormat) : 0)
+                  + sizeof(TextureFormat) * rtvs.Length
+            )
         );
         m_stream.Add((nuint)data.data);
         data[0] = (byte)FGpuCommandOp.SetRt;
         var s = (FGpuCommandSetRt*)data[(nuint)1];
         s->rtv_count = (byte)rtvs.Length;
-        *(CpuDescriptorHandle*)data[(nuint)(1 + sizeof(FGpuCommandSetRt))] = dsv;
+        s->has_dsv = dsv.HasValue;
+        var p = data[(nuint)(1 + sizeof(FGpuCommandSetRt))];
+        if (dsv.HasValue)
+        {
+            *(CpuDescriptorHandle*)p = dsv.Value;
+            p += sizeof(CpuDescriptorHandle);
+        }
         if (rtvs.Length > 0)
         {
             var r = new Span<CpuDescriptorHandle>(
-                data[(nuint)(1 + sizeof(FGpuCommandSetRt) + sizeof(CpuDescriptorHandle))],
+                p,
                 rtvs.Length
             );
             rtvs.CopyTo(r);
+            p += sizeof(CpuDescriptorHandle) * rtvs.Length;
+        }
+        if (dsv.HasValue)
+        {
+            *(TextureFormat*)p = formats.Dsv;
+            p += sizeof(TextureFormat);
+        }
+        if (rtvs.Length > 0)
+        {
+            var r = new Span<TextureFormat>(
+                p,
+                rtvs.Length
+            );
+            formats.Rtvs.CopyTo(r);
         }
     }
 
@@ -230,7 +257,7 @@ public partial class CommandBuffer
 
     public void SetRt(GraphicSurface surface)
     {
-        InternalSetRt(default, [surface.CurrentFrameRtv]);
+        InternalSetRt(null, [surface.CurrentFrameRtv], new(TextureFormat.Unknown, [surface.Format]));
         var size = surface.Size;
         InternalSetViewPort([new(size.x, size.y)]);
         InternalSetScissorRect([new(0, 0, (int)size.x, (int)size.y)]);
