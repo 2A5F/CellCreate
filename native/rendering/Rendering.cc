@@ -872,14 +872,17 @@ Rc<GraphicsShaderPipeline> ShaderPassGraphicsPipelinePack::GetOrCreateGraphicsPi
     const GraphicsPipelineFormatOverride& override
 )
 {
-    return m_graphics_pipelines.GetOrAdd(
-        override,
-        [&](auto& _)
-        {
-            Rc r = new GraphicsShaderPipeline(m_pass->m_rendering->CloneThis(), &m_pass->m_data, &override);
-            return r;
-        }
-    );
+    {
+        const auto graphics_pipelines = m_graphics_pipelines.read();
+        if (const auto iter = graphics_pipelines->find(override); iter != graphics_pipelines->end())
+            return iter->second;
+    }
+    {
+        const auto graphics_pipelines = m_graphics_pipelines.write();
+        Rc r = new GraphicsShaderPipeline(m_pass->m_rendering->CloneThis(), &m_pass->m_data, &override);
+        (*graphics_pipelines)[override] = r;
+        return r;
+    }
 }
 
 ShaderPass::ShaderPass(Rc<Rendering>&& rendering, const FShaderPassData* data)

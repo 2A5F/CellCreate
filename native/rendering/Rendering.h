@@ -196,10 +196,10 @@ namespace cc
 
     struct ShaderPassGraphicsPipelinePack
     {
-        using GraphicsPipelines = CoHashMap<GraphicsPipelineFormatOverride, Rc<GraphicsShaderPipeline>>;
+        using GraphicsPipelines = HashMap<GraphicsPipelineFormatOverride, Rc<GraphicsShaderPipeline>>;
 
         ShaderPass* m_pass;
-        GraphicsPipelines m_graphics_pipelines{};
+        RwLock<GraphicsPipelines> m_graphics_pipelines{};
 
         explicit ShaderPassGraphicsPipelinePack(ShaderPass* pass);
 
