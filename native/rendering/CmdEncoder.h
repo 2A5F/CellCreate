@@ -5,5 +5,15 @@
 
 namespace cc
 {
-    void cmd_encoder(ID3D12GraphicsCommandList6* list, gpu::FGpuStreamCommands& cmds);
+    struct CmdEncoder
+    {
+        ID3D12GraphicsCommandList6* m_list;
+
+        explicit CmdEncoder(ID3D12GraphicsCommandList6* list);
+
+        void Add(const gpu::FGpuStreamCommands& cmds);
+
+    private:
+        GraphicsPipelineFormatOverride m_cur_rt_format{};
+    };
 }

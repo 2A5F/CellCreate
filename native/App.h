@@ -69,5 +69,7 @@ namespace cc
 
         FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept override;
         FError CreateRendering(FRendering*& out) noexcept override;
+
+        FError CreatePaddedChunkedVectorData(FChunkedVectorData*& out) noexcept override;
     };
 }

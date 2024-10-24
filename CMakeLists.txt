@@ -98,6 +98,9 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/utils/hash_eq.h
         native/utils/bitcount.h
         native/utils/RwLock.h
+        native/ffi/Collections.h
+        native/utils/ChunkVec.cc
+        native/utils/ChunkVec.h
 )
 
 if (WIN32)

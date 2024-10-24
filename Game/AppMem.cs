@@ -1,9 +1,12 @@
-﻿using Game.Native;
+﻿using System.Runtime.InteropServices;
+using Game.Native;
 
 namespace Game;
 
 public static unsafe partial class App
 {
+    public static T* MemAlloc<T>() => (T*)MemAlloc((nuint)sizeof(T));
+    
     public static void* MemAlloc(nuint size)
     {
         void* ptr;

@@ -427,6 +427,14 @@ namespace Game.Native
             FError result;
             return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[19]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError CreatePaddedChunkedVectorData([NativeTypeName("FChunkedVectorData *&")] FChunkedVectorData** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FChunkedVectorData**, FError*>)(lpVtbl[20]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
+        }
     }
 
     public unsafe partial struct AppFnVtb
@@ -2390,5 +2398,101 @@ namespace Game.Native
         BC7_TypeLess = 97,
         BC7_UNorm = 98,
         BC7_UNorm_sRGB = 99,
+    }
+
+    public partial struct FChunkedVectorConsts
+    {
+
+        [NativeTypeName("const int32_t")]
+        public const int ChunkSize = 1024 * 16;
+
+        [NativeTypeName("const int32_t")]
+        public const int InitCapacity = 1;
+    }
+
+    [NativeTypeName("struct FChunkedVectorData : cc::IObject, cc::FChunkedVectorConsts")]
+    public unsafe partial struct FChunkedVectorData
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("size_t")]
+        public nuint type_size;
+
+        public void** chunks;
+
+        [NativeTypeName("size_t")]
+        public nuint chunk_count;
+
+        [NativeTypeName("size_t")]
+        public nuint count;
+
+        [NativeTypeName("size_t")]
+        public nuint cur_chunk;
+
+        [NativeTypeName("size_t")]
+        public nuint cur_in_chunk;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "270057f3-e830-4bca-9fab-0b2fa08bbbdf";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, void>)(lpVtbl[0]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, nuint>)(lpVtbl[1]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, nuint>)(lpVtbl[2]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, nuint>)(lpVtbl[3]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, nuint>)(lpVtbl[4]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, B8>)(lpVtbl[5]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, B8>)(lpVtbl[6]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, void*>)(lpVtbl[7]))((FChunkedVectorData*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FChunkedVectorData*, Guid, void*>)(lpVtbl[8]))((FChunkedVectorData*)Unsafe.AsPointer(ref this), id);
+        }
     }
 }

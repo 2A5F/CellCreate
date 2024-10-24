@@ -14,6 +14,7 @@ FError RenderGraph::ExecuteCommand(gpu::FGpuStreamCommands cmds) noexcept
 {
     return ferr_back([&]
     {
-        cmd_encoder(m_rendering->m_current_command_list.get(), cmds);
+        CmdEncoder encoder(m_rendering->m_current_command_list.get());
+        encoder.Add(cmds);
     });
 }

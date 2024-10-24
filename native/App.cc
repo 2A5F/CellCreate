@@ -4,6 +4,7 @@
 
 #include "rendering/Rendering.h"
 #include "utils/error.h"
+#include "utils/ChunkVec.h"
 #include "window/Window.h"
 
 using namespace cc;
@@ -66,6 +67,17 @@ FError App::CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& ou
 FError App::CreateRendering(FRendering*& out) noexcept
 {
     return Rendering::Create(out);
+}
+
+FError App::CreatePaddedChunkedVectorData(FChunkedVectorData*& out) noexcept
+{
+    return ferr_back(
+        [&]
+        {
+            Rc r = new ChunkedVectorData();
+            out = r.leak();
+        }
+    );
 }
 
 // true 表示允许将事件添加到队列，false 表示不允许。与 SDL_AddEventWatch 一起使用时，返回值将被忽略。

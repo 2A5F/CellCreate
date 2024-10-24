@@ -34,6 +34,7 @@ cc::uuid=Guid
 ../native/ffi/Rendering.h
 ../native/ffi/Shader.h
 ../native/ffi/TextureFormat.h
+../native/ffi/Collections.h
 --libraryPath
 cc.exe
 --methodClassName

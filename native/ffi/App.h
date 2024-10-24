@@ -2,6 +2,7 @@
 
 #include "./FFI.h"
 #include "./Window.h"
+#include "Collections.h"
 #include "Rendering.h"
 
 namespace cc
@@ -45,5 +46,7 @@ namespace cc
 
         virtual FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept = 0;
         virtual FError CreateRendering(FRendering*& out) noexcept = 0;
+
+        virtual FError CreatePaddedChunkedVectorData(FChunkedVectorData*& out) noexcept = 0;
     };
 }
