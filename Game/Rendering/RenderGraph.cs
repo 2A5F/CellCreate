@@ -1,4 +1,5 @@
-﻿using Coplt.Dropping;
+﻿using System.Runtime.InteropServices;
+using Coplt.Dropping;
 using Game.Native;
 using Game.Utilities;
 
@@ -85,7 +86,7 @@ public sealed unsafe partial class RenderGraph
 
     public void EndRecordingAndExecute()
     {
-        Compile();
+        Execute();
         // todo
         Rendering.EndFrame();
         IsRecording = false;
@@ -114,11 +115,48 @@ public sealed unsafe partial class RenderGraph
 
     #endregion
 
-    #region Compile
+    #region Execute
 
-    private void Compile()
+    private void Execute()
     {
-        foreach (var pass in passes) { }
+        var cmd = CommandBufferPool.Get();
+        try
+        {
+            var ctx = new RenderGraphContext
+            {
+                Rendering = Rendering,
+                Surface = Surface,
+                cmd = cmd,
+                FramedData = ref FramedData,
+            };
+            foreach (var pass in passes)
+            {
+                pass.ExecRenderFunc(pass, ctx, pass.Data, pass.RenderFunc);
+            }
+
+            {
+                fixed (UIntPtr* p_stream = CollectionsMarshal.AsSpan(cmd.m_stream))
+                {
+                    var cmds = new FGpuStreamCommands
+                    {
+                        count = (nuint)cmd.m_stream.Count,
+                        stream = (FGpuCommandOp**)p_stream,
+                    };
+                    m_ptr->ExecuteCommand(cmds).TryThrow();
+                }
+            }
+        }
+        finally
+        {
+            cmd.Reset();
+            CommandBufferPool.Return(cmd);
+            foreach (var pass in passes)
+            {
+                pass.Reset();
+                PassPool.Return(pass);
+            }
+            passes.Clear();
+        }
     }
 
     #endregion

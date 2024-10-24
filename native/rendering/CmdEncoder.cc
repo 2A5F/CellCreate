@@ -78,6 +78,7 @@ void cc::cmd_encoder(ID3D12GraphicsCommandList6* list, FGpuStreamCommands& cmds)
                     false,
                     dsv_ptr
                 );
+                lp += sizeof(D3D12_CPU_DESCRIPTOR_HANDLE) * data_ptr->rtv_count;
                 cur_rt_format.dsv_format = data_ptr->has_dsv
                     ? *reinterpret_cast<TextureFormat*>(lp)
                     : TextureFormat::Unknown;

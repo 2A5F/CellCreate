@@ -42,7 +42,6 @@ public static partial class App
         while (Vars.running)
         {
             Rendering.Graph.BeginRecording(Window.Surface!);
-            Rendering.ClearSurface(Window.Surface!, new(0, 0, 0, 1));
 
             Draw(shader_ui_rect);
 
@@ -65,19 +64,5 @@ public static partial class App
             ctx.cmd.SetRt(ctx.Surface);
             ctx.cmd.DrawFullScreen(data.shader_ui_rect);
         });
-
-        // ↓ test code，↑ target code
-        var pipeline_ui_rect = shader_ui_rect.GetOrCreateGraphicsShaderPipeline(
-            new(TextureFormat.D24_UNorm_S8_UInt, [TextureFormat.R8G8B8A8_UNorm])
-        );
-        var size = Window.PixelSize;
-        var frame = Rendering.CurrentFrameRtv(Window.Surface!);
-        var cmd_list = Rendering.CurrentCommandList;
-        cmd_list->OMSetRenderTargets(1, &frame, false, null);
-        cmd_list->RSSetViewports(1, new Viewport(0, 0, size.x, size.y, 0, 1));
-        cmd_list->RSSetScissorRects(1, new Box2D<int>(0, 0, (int)size.x, (int)size.y));
-        cmd_list->IASetPrimitiveTopology(D3DPrimitiveTopology.D3DPrimitiveTopologyTrianglestrip);
-        cmd_list->SetPipelineState(pipeline_ui_rect.RawPtr);
-        cmd_list->DrawInstanced(4, 1, 0, 0);
     }
 }

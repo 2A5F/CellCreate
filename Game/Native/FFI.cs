@@ -1355,6 +1355,14 @@ namespace Game.Native
         {
             return ((delegate* unmanaged[Thiscall]<FGpuGraph*, Guid, void*>)(lpVtbl[8]))((FGpuGraph*)Unsafe.AsPointer(ref this), id);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
+        public FError ExecuteCommand([NativeTypeName("cc::gpu::FGpuStreamCommands")] FGpuStreamCommands cmds)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FGpuGraph*, FError*, FGpuStreamCommands, FError*>)(lpVtbl[9]))((FGpuGraph*)Unsafe.AsPointer(ref this), &result, cmds);
+        }
     }
 
     [NativeTypeName("cc::u8")]
@@ -1401,7 +1409,7 @@ namespace Game.Native
         [NativeTypeName("cc::u8")]
         public byte stencil;
 
-        [NativeTypeName("__AnonymousRecord_Rendering_L194_C13")]
+        [NativeTypeName("__AnonymousRecord_Rendering_L201_C13")]
         public _flags_e__Struct flags;
 
         public partial struct _flags_e__Struct

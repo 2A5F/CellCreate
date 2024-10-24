@@ -5,6 +5,11 @@
 
 namespace cc
 {
+    namespace gpu
+    {
+        struct FGpuStreamCommands;
+    }
+
     struct FGpuConsts
     {
         static constexpr uint32_t FrameCount = 3;
@@ -141,6 +146,8 @@ namespace cc
     struct FGpuGraph : IObject
     {
         IMPL_INTERFACE("e3f38929-74e9-4df0-8001-e82eed2a23f7", IObject);
+
+        virtual FError ExecuteCommand(gpu::FGpuStreamCommands cmds) noexcept = 0;
     };
 
     namespace gpu

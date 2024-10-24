@@ -29,7 +29,8 @@ public unsafe partial class NativeChunkList<T>
 
     public NativeChunkList()
     {
-        var align = (nuint)(&((Chunk*)null)->first);
+        Chunk _;
+        var align = (nuint)(&(&_)->first) - (nuint)(&_);
         var last_size = ChunkSize - align;
         if ((nuint)sizeof(T) > last_size) throw new ArgumentOutOfRangeException($"{typeof(T)} is too large");
         m_chunk_cap = last_size / (nuint)sizeof(T);

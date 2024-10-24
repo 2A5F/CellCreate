@@ -12,5 +12,7 @@ namespace cc
         Rc<Rendering> m_rendering;
 
         explicit RenderGraph(Rc<Rendering>&& rendering);
+
+        FError ExecuteCommand(gpu::FGpuStreamCommands cmds) noexcept override;
     };
 }
