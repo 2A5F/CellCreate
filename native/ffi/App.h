@@ -44,6 +44,8 @@ namespace cc
         virtual FError MsgLoop() noexcept = 0;
         virtual FError SendMsg(FMessage type, void* data) noexcept = 0;
 
+        virtual FError CreateString(FrStr16 str, FString16*& out) noexcept = 0;
+
         virtual FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept = 0;
         virtual FError CreateRendering(FRendering*& out) noexcept = 0;
 

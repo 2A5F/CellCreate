@@ -108,6 +108,8 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/utils/ChunkVec.cc
         native/utils/ChunkVec.h
         native/utils/rent.h
+        native/utils/String.cc
+        native/utils/String.h
 )
 
 if (WIN32)

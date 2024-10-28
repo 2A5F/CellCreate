@@ -166,6 +166,10 @@ namespace cc
         {
             // 无操作
             Nop,
+            // 使用 FGpuCommandString
+            DebugScopeStart,
+            // 无结构
+            DebugScopeEnd,
             // 清空指定的 rtv
             ClearRtv,
             // 清空指定的 dsv
@@ -184,6 +188,12 @@ namespace cc
             Dispatch,
             // 调度 Mesh shader，也使用 FGpuCommandDispatch
             DispatchMesh,
+        };
+
+        struct FGpuCommandString
+        {
+            // 不持有所有权，需要 c# 部分保证生命周期
+            FString16* str;
         };
 
         struct FGpuCommandClearRtv

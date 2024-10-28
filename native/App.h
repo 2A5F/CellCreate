@@ -67,6 +67,8 @@ namespace cc
         FError MsgLoop() noexcept override;
         FError SendMsg(FMessage type, void* data) noexcept override;
 
+        FError CreateString(FrStr16 str, FString16*& out) noexcept override;
+
         FError CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept override;
         FError CreateRendering(FRendering*& out) noexcept override;
 

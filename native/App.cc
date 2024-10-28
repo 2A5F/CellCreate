@@ -5,6 +5,7 @@
 #include "rendering/Rendering.h"
 #include "utils/error.h"
 #include "utils/ChunkVec.h"
+#include "utils/String.h"
 #include "window/Window.h"
 
 using namespace cc;
@@ -57,6 +58,15 @@ FError App::SendMsg(FMessage type, void* data) noexcept
     event.user.data1 = data;
     SDL_PushEvent(&event);
     return FError::None();
+}
+
+FError App::CreateString(const FrStr16 str, FString16*& out) noexcept
+{
+    return ferr_back([&]
+    {
+        Rc r = String16::Create(str);
+        out = r.leak();
+    });
 }
 
 FError App::CreateWindowHandle(FWindowCreateOptions& options, FWindowHandle*& out) noexcept

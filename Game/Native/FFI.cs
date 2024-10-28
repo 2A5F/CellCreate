@@ -187,6 +187,83 @@ namespace Game.Native
         }
     }
 
+    [NativeTypeName("struct FString16 : cc::IObject")]
+    public unsafe partial struct FString16
+    {
+        public void** lpVtbl;
+
+        [NativeTypeName("const wchar_t *const")]
+        public const string s_FFI_UUID = "b534098f-bd06-4de5-aeda-24d82ac7ee14";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose()
+        {
+            ((delegate* unmanaged[Thiscall]<FString16*, void>)(lpVtbl[0]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRef()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, nuint>)(lpVtbl[1]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint Release()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, nuint>)(lpVtbl[2]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint AddRefWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, nuint>)(lpVtbl[3]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("size_t")]
+        public nuint ReleaseWeak()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, nuint>)(lpVtbl[4]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryDowngrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, B8>)(lpVtbl[5]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::b8")]
+        public B8 TryUpgrade()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, B8>)(lpVtbl[6]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* ObjectStart()
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, void*>)(lpVtbl[7]))((FString16*)Unsafe.AsPointer(ref this));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void* QueryInterface([NativeTypeName("cc::uuid")] Guid id)
+        {
+            return ((delegate* unmanaged[Thiscall]<FString16*, Guid, void*>)(lpVtbl[8]))((FString16*)Unsafe.AsPointer(ref this), id);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FrStr16")]
+        public FrStr16 AsStr()
+        {
+            FrStr16 result;
+            return *((delegate* unmanaged[Thiscall]<FString16*, FrStr16*, FrStr16*>)(lpVtbl[9]))((FString16*)Unsafe.AsPointer(ref this), &result);
+        }
+    }
+
     public enum FErrorType
     {
         None,
@@ -209,7 +286,7 @@ namespace Game.Native
         [NativeTypeName("cc::FErrorMsgType")]
         public FErrorMsgType msg_type;
 
-        [NativeTypeName("__AnonymousRecord_FFI_L227_C9")]
+        [NativeTypeName("__AnonymousRecord_FFI_L234_C9")]
         public _Anonymous_e__Union Anonymous;
 
         [UnscopedRef]
@@ -414,10 +491,18 @@ namespace Game.Native
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NativeTypeName("cc::FError")]
+        public FError CreateString([NativeTypeName("cc::FrStr16")] FrStr16 str, [NativeTypeName("FString16 *&")] FString16** @out)
+        {
+            FError result;
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FrStr16, FString16**, FError*>)(lpVtbl[18]))((FApp*)Unsafe.AsPointer(ref this), &result, str, @out);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NativeTypeName("cc::FError")]
         public FError CreateWindowHandle([NativeTypeName("cc::FWindowCreateOptions &")] FWindowCreateOptions* options, [NativeTypeName("FWindowHandle *&")] FWindowHandle** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FWindowCreateOptions*, FWindowHandle**, FError*>)(lpVtbl[18]))((FApp*)Unsafe.AsPointer(ref this), &result, options, @out);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FWindowCreateOptions*, FWindowHandle**, FError*>)(lpVtbl[19]))((FApp*)Unsafe.AsPointer(ref this), &result, options, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -425,7 +510,7 @@ namespace Game.Native
         public FError CreateRendering([NativeTypeName("FRendering *&")] FRendering** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[19]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FRendering**, FError*>)(lpVtbl[20]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -433,7 +518,7 @@ namespace Game.Native
         public FError CreatePaddedChunkedVectorData([NativeTypeName("FChunkedVectorData *&")] FChunkedVectorData** @out)
         {
             FError result;
-            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FChunkedVectorData**, FError*>)(lpVtbl[20]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
+            return *((delegate* unmanaged[Thiscall]<FApp*, FError*, FChunkedVectorData**, FError*>)(lpVtbl[21]))((FApp*)Unsafe.AsPointer(ref this), &result, @out);
         }
     }
 
@@ -1515,6 +1600,8 @@ namespace Game.Native
     public enum FGpuCommandOp : byte
     {
         Nop,
+        DebugScopeStart,
+        DebugScopeEnd,
         ClearRtv,
         ClearDsv,
         SetRt,
@@ -1524,6 +1611,12 @@ namespace Game.Native
         DrawInstanced,
         Dispatch,
         DispatchMesh,
+    }
+
+    public unsafe partial struct FGpuCommandString
+    {
+        [NativeTypeName("cc::FString16 *")]
+        public FString16* str;
     }
 
     public partial struct FGpuCommandClearRtv
@@ -1555,7 +1648,7 @@ namespace Game.Native
         [NativeTypeName("cc::u8")]
         public byte stencil;
 
-        [NativeTypeName("__AnonymousRecord_Rendering_L211_C13")]
+        [NativeTypeName("__AnonymousRecord_Rendering_L221_C13")]
         public _flags_e__Struct flags;
 
         public partial struct _flags_e__Struct

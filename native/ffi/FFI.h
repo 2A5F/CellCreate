@@ -205,6 +205,13 @@ namespace cc
     }
     #endif
 
+    struct FString16 : IObject
+    {
+        IMPL_INTERFACE("b534098f-bd06-4de5-aeda-24d82ac7ee14", IObject);
+
+        virtual FrStr16 AsStr() const noexcept = 0;
+    };
+
     enum class FErrorType
     {
         None,

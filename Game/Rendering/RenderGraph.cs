@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using Coplt.Dropping;
 using Game.Native;
 using Game.Utilities;
@@ -38,6 +39,15 @@ public sealed unsafe partial class RenderGraph
     internal ObjectPool<Pass> PassPool { get; } = ObjectPool.Create<Pass>();
     [Drop]
     internal ObjectPool<CommandBuffer> CommandBufferPool { get; }
+
+    #endregion
+
+    #region String Cache
+
+    internal static readonly ConcurrentDictionary<string, NativeString16> StringCache = new();
+
+    internal static NativeString16 ToNativeString16(string str) =>
+        StringCache.GetOrAdd(str, static key => new NativeString16(key));
 
     #endregion
 
@@ -96,6 +106,8 @@ public sealed unsafe partial class RenderGraph
 
     #region AddPass
 
+    /// <param name="name">需要是常量</param>
+    /// <param name="data"></param>
     public PassBuilder<T> AddPass<T>(string name, out T data) where T : class, new()
     {
         data = ObjectPool.Get<T>();
@@ -131,7 +143,9 @@ public sealed unsafe partial class RenderGraph
             };
             foreach (var pass in passes)
             {
+                if (App.Vars.debug) cmd.InternalDebugScopeStart(ToNativeString16(pass.Name));
                 pass.ExecRenderFunc(pass, ctx, pass.Data, pass.RenderFunc);
+                if (App.Vars.debug) cmd.InternalDebugScopeEnd();
             }
 
             {

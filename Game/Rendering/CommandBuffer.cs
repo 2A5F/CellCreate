@@ -33,6 +33,29 @@ public partial class CommandBuffer
 
     #region Internal
 
+    #region InternalDebugScope
+
+    /// <param name="str">必须静态生命周期</param>
+    internal unsafe void InternalDebugScopeStart(NativeString16 str)
+    {
+        var data = m_data.Extra(
+            (nuint)(1 + sizeof(FGpuCommandString))
+        );
+        m_stream.Add((nuint)data.data);
+        data[0] = (byte)FGpuCommandOp.DebugScopeStart;
+        var s = (FGpuCommandString*)data[(nuint)1];
+        s->str = str.m_ptr;
+    }
+
+    internal unsafe void InternalDebugScopeEnd()
+    {
+        var data = m_data.Extra(1);
+        m_stream.Add((nuint)data.data);
+        data[0] = (byte)FGpuCommandOp.DebugScopeEnd;
+    }
+
+    #endregion
+
     #region InternalClearRtv
 
     internal unsafe void InternalClearRtv(CpuDescriptorHandle rtv, float4 color, ReadOnlySpan<int4> rects)

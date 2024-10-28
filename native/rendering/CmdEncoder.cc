@@ -1,11 +1,14 @@
 #include "CmdEncoder.h"
 
+#include <WinPixEventRuntime/pix3.h>
+
 #include <fmt/format.h>
 #include <fmt/xchar.h>
 
 #include "Rendering.h"
 #include "../App.h"
 #include "../utils/error.h"
+#include "../utils/String.h"
 
 using namespace cc;
 using namespace cc::gpu;
@@ -24,6 +27,24 @@ void CmdEncoder::Add(const FGpuStreamCommands& cmds)
         switch (op)
         {
         case FGpuCommandOp::Nop: break;
+        case FGpuCommandOp::DebugScopeStart:
+            {
+                if (args().debug)
+                {
+                    const auto data_ptr = reinterpret_cast<FGpuCommandString*>(root_ptr);
+                    const auto str = static_cast<String16*>(data_ptr->str); // NOLINT(*-pro-type-static-cast-downcast)
+                    PIXBeginEvent(m_list, PIX_COLOR_DEFAULT, L"%s", str->c_str());
+                }
+                break;
+            }
+        case FGpuCommandOp::DebugScopeEnd:
+            {
+                if (args().debug)
+                {
+                    PIXEndEvent(m_list);
+                }
+                break;
+            }
         case FGpuCommandOp::ClearRtv:
             {
                 const auto data_ptr = reinterpret_cast<FGpuCommandClearRtv*>(root_ptr);
