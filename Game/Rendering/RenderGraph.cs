@@ -79,13 +79,13 @@ public sealed unsafe partial class RenderGraph
         Surface = surface;
 
         IsRecording = true;
-        Rendering.ReadyFrame();
 
         FramedData.SurfaceSize = surface.Size;
     }
 
     public void EndRecordingAndExecute()
     {
+        Rendering.ReadyFrame();
         Execute();
         // todo
         Rendering.EndFrame();

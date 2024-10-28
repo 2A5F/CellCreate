@@ -101,6 +101,7 @@ add_executable(${PROJECT_NAME} native/main.cpp
         native/ffi/Collections.h
         native/utils/ChunkVec.cc
         native/utils/ChunkVec.h
+        native/utils/rent.h
 )
 
 if (WIN32)
@@ -126,6 +127,7 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(stduuid CONFIG REQUIRED)
 find_package(unordered_dense CONFIG REQUIRED)
+find_package(unofficial-concurrentqueue CONFIG REQUIRED)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PACKAGE_PREFIX_DIR}/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${PACKAGE_PREFIX_DIR}/lib)
@@ -145,6 +147,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::DirectXShaderCompiler)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm-header-only)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpptrace::cpptrace)
 target_link_libraries(${PROJECT_NAME} PRIVATE unordered_dense::unordered_dense)
+target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::concurrentqueue::concurrentqueue)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE nethost.lib)
 configure_file(${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native/nethost.dll ${CMAKE_BINARY_DIR}/bin/nethost.dll COPYONLY)

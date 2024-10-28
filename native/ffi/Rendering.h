@@ -59,6 +59,16 @@ namespace cc
         virtual FError CurrentFrameRtv(FGraphicSurface* ctx, void** out) noexcept = 0;
     };
 
+    struct FGpuQueue : IObject, FGpuConsts
+    {
+        IMPL_INTERFACE("f9e68473-6fee-49e0-9e65-58d2f77fb849", IObject);
+    };
+
+    struct FGpuTask : IObject
+    {
+        IMPL_INTERFACE("91ecc8c1-f971-44a2-9123-c152bfc7bc0d", IObject);
+    };
+
     struct FGraphicSurfaceData
     {
         // D3D12_CPU_DESCRIPTOR_HANDLE

@@ -5,15 +5,22 @@
 #include <directx/d3dx12_root_signature.h>
 #include <D3D12MemAlloc.h>
 
+#include <concurrentqueue/concurrentqueue.h>
+#include <parallel_hashmap/phmap.h>
+
 #include "../Object.h"
 #include "../ffi/FFI.h"
 #include "../ffi/Rendering.h"
+#include "../utils/rent.h"
 
 namespace cc
 {
     class ShaderPass;
     class GraphicsShaderPipeline;
-    class Queue;
+    class GpuTask;
+    class GpuFence;
+    class GpuGraphicQueue;
+    class GpuBackgroundQueue;
     class GraphicSurface;
     class DescriptorSet;
 
@@ -29,16 +36,13 @@ namespace cc
         ComPtr<ID3D12InfoQueue1> m_info_queue{};
         ComPtr<D3D12MA::Allocator> m_gpu_allocator{};
 
-        Box<Queue> m_queue{};
-        Box<Queue> m_queue_compute{};
-        Box<Queue> m_queue_copy{};
+        Rc<GpuGraphicQueue> m_queue{};
+        Rc<GpuBackgroundQueue> m_queue_compute{};
+        Rc<GpuBackgroundQueue> m_queue_copy{};
 
         Box<DescriptorSet> m_descriptors{};
 
-        ComPtr<ID3D12GraphicsCommandList6> m_current_command_list{};
         ComPtr<ID3D12RootSignature> m_bind_less_root_signature{};
-
-        HANDLE m_fence_event{};
 
         FRenderingState m_state{};
 
@@ -49,18 +53,10 @@ namespace cc
         ~Rendering() override;
 
     private:
-        void WaitAll() const;
+        void WaitAllFrame() const;
         void WaitCurrentFrame() const;
-        void WaitFrame(UINT32 index) const;
 
         void MoveToNextFrame();
-
-        void ResetCommandAllocator() const;
-        void ResetCommandAllocator(UINT32 index) const;
-        void ResetAllCommandAllocator() const;
-
-        void AfterSubmit() const;
-        void AfterSubmit(UINT32 index) const;
 
     public:
         static FError Create(FRendering*& out) noexcept;
@@ -69,6 +65,7 @@ namespace cc
         explicit Rendering();
 
         FRenderingState* StatePtr() noexcept override;
+        const Rc<GpuTask>& CurrentTask() const;
 
         FError MakeContext(FWindowHandle* window_handle, FGraphicSurface** out) noexcept override;
 
@@ -90,7 +87,7 @@ namespace cc
         FError CurrentFrameRtv(FGraphicSurface* ctx, void** out) noexcept override;
     };
 
-    class Queue final : public FGpuConsts
+    class AGpuQueue : public Object<FGpuQueue>
     {
         friend Rendering;
 
@@ -98,22 +95,167 @@ namespace cc
         // Rendering* 持有 Queue
         Rendering* m_rendering;
         ComPtr<ID3D12CommandQueue> m_queue{};
-        ComPtr<ID3D12Fence> m_fence{};
-        ComPtr<ID3D12CommandAllocator> m_command_allocators[FrameCount]{};
-        UINT64 m_frame_current_fence_value[FrameCount]{};
-        UINT64 m_fence_value{};
+        D3D12_COMMAND_LIST_TYPE m_type{};
 
-        explicit Queue(
-            Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority, LPCWSTR name
+        std::optional<std::wstring> m_name{};
+
+        explicit AGpuQueue(
+            Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority,
+            std::optional<std::wstring>&& name
+        );
+    };
+
+    class GpuGraphicQueue final : public AGpuQueue
+    {
+        IMPL_OBJECT();
+
+        friend Rendering;
+
+    public:
+        Rc<GpuTask> m_tasks[FrameCount]{};
+
+        explicit GpuGraphicQueue(
+            Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority,
+            std::optional<std::wstring>&& name
         );
 
-        void Wait(UINT64 fence_value, HANDLE event) const;
-        void WaitAll(HANDLE event) const;
-        void WaitFrame(UINT32 index, HANDLE event) const;
+        // 获取指定帧的 task
+        const Rc<GpuTask>& GetTask(u32 frame) const noexcept;
+    };
 
-        void SignalFrame(UINT32 index);
+    class GpuBackgroundQueue final : public AGpuQueue
+    {
+        IMPL_OBJECT();
 
-        void ReSet(UINT32 index);
+        friend Rendering;
+
+    public:
+        std::atomic<size_t> m_task_id{0};
+        moodycamel::ConcurrentQueue<Rc<GpuTask>> m_task_pool{};
+
+        explicit GpuBackgroundQueue(
+            Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority,
+            std::optional<std::wstring>&& name
+        );
+
+        // 租借 task
+        Rent<Rc<GpuTask>> RentTask();
+        // 归还 task，将会尝试提交和等待
+        void ReturnTask(Rc<GpuTask>&& task);
+        // 归还 task，不会尝试提交和等待
+        void UnsafeReturnTask(Rent<Rc<GpuTask>>&& task);
+    };
+
+    class GpuFence final : public Object<>
+    {
+        IMPL_OBJECT();
+
+    protected:
+        ~GpuFence() override;
+
+    public:
+        UINT64 m_fence_value{};
+        ComPtr<ID3D12Fence> m_fence{};
+        HANDLE m_fence_event{};
+
+        explicit GpuFence(ID3D12Device& device);
+
+        void SetName(LPCWSTR name) const;
+
+        void Wait() const;
+
+        void Signal(ID3D12CommandQueue& queue);
+    };
+
+    class GpuTask final : public Object<FGpuTask>
+    {
+        IMPL_OBJECT();
+
+    public:
+        // Queue* 持有 Task
+        AGpuQueue* m_queue{};
+        Rc<GpuFence> m_fence{};
+        ComPtr<ID3D12CommandAllocator> m_command_allocators{};
+        ComPtr<ID3D12GraphicsCommandList7> m_command_list{};
+
+        std::optional<std::wstring> m_name{};
+
+        enum class State
+        {
+            Idle,
+            Submitted,
+        };
+
+        State m_state{State::Idle};
+
+    protected:
+        ~GpuTask() override;
+
+    private:
+        void do_reset() const;
+
+    public:
+        explicit GpuTask(AGpuQueue* queue, std::optional<std::wstring>&& name);
+
+        ID3D12GraphicsCommandList7* GetList() const;
+
+        void Submit();
+        void Wait();
+    };
+
+    template <>
+    struct Rent<Rc<GpuTask>>
+    {
+        Rc<Rendering> m_rendering{};
+        Rc<GpuBackgroundQueue> m_queue;
+        Rc<GpuTask> m_task{};
+        bool m_not_moved{true};
+
+        explicit Rent(Rc<GpuBackgroundQueue>&& queue, Rc<GpuTask>&& task) :
+            m_rendering(queue->m_rendering->CloneThis()),
+            m_queue(std::move(queue)), m_task(std::move(task))
+        {
+        }
+
+        Rent(Rent& other) = delete;
+
+        Rent& operator=(Rent& other) = delete;
+
+        Rent(Rent&& other) noexcept
+        {
+            m_rendering = std::move(other.m_rendering);
+            m_queue = std::move(other.m_queue);
+            m_task = std::move(other.m_task);
+            other.m_not_moved = false;
+        }
+
+        Rent& operator=(Rent&& other) noexcept
+        {
+            m_rendering = std::move(other.m_rendering);
+            m_queue = std::move(other.m_queue);
+            m_task = std::move(other.m_task);
+            other.m_not_moved = false;
+            this->m_not_moved = true;
+            return *this;
+        }
+
+        ~Rent()
+        {
+            if (m_not_moved)
+            {
+                m_queue->ReturnTask(std::move(m_task));
+            }
+        }
+
+        GpuTask& operator*() const
+        {
+            return m_task.operator*();
+        }
+
+        GpuTask* operator->() const
+        {
+            return m_task.operator->();
+        }
     };
 
     class GraphicSurface final : public Object<FGraphicSurface>

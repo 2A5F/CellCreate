@@ -91,7 +91,7 @@ public unsafe partial class UnsafeNativeChunkVec
 public unsafe class NativeChunkVec<T> : UnsafeNativeChunkVec, IEnumerable<T>
     where T : unmanaged
 {
-    private static SizeInfo SizeInfo => new((nuint)sizeof(T), (nuint)(ChunkSize / sizeof(T)));
+    private static new SizeInfo SizeInfo => new((nuint)sizeof(T), (nuint)(ChunkSize / sizeof(T)));
 
     public readonly struct Chunk(T* ptr)
     {

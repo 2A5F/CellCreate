@@ -112,9 +112,7 @@ namespace
 
 Rendering::~Rendering()
 {
-    if (m_state._on_recording) EndFrame();
-    AfterSubmit();
-    WaitAll();
+    WaitAllFrame();
 
     if (m_info_queue.get() != nullptr && m_callback_cookie != 0)
     {
@@ -211,30 +209,15 @@ Rendering::Rendering()
 
     // 创建队列
     {
-        m_queue = std::make_unique<Queue>(
+        m_queue = new GpuGraphicQueue(
             this, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, L"Main"
         );
-        m_queue_compute = std::make_unique<Queue>(
+        m_queue_compute = new GpuBackgroundQueue(
             this, D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_QUEUE_PRIORITY_HIGH, L"Compute"
         );
-        m_queue_copy = std::make_unique<Queue>(
+        m_queue_copy = new GpuBackgroundQueue(
             this, D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, L"Copy"
         );
-    }
-
-    // 创建当前命令列表
-    {
-        check_error << m_device->CreateCommandList(
-            0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_queue->m_command_allocators[0].get(), nullptr,
-            RT_IID_PPV_ARGS(m_current_command_list)
-        );
-        check_error << m_current_command_list->Close();
-    }
-
-    // 创建栅栏事件
-    {
-        m_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        if (m_fence_event == nullptr) winrt::throw_last_error();
     }
 
     // 创建无绑定根签名
@@ -388,23 +371,17 @@ FError Rendering::CreateBuffer(const FGpuBufferCreateOptions* options, FGpuBuffe
     );
 }
 
-void Rendering::WaitAll() const
+void Rendering::WaitAllFrame() const
 {
-    m_queue->WaitAll(m_fence_event);
-    m_queue_compute->WaitAll(m_fence_event);
-    m_queue_copy->WaitAll(m_fence_event);
+    for (const auto& task : m_queue->m_tasks)
+    {
+        task->Wait();
+    }
 }
 
 void Rendering::WaitCurrentFrame() const
 {
-    WaitFrame(m_state._frame_index);
-}
-
-void Rendering::WaitFrame(const UINT32 index) const
-{
-    m_queue->WaitFrame(index, m_fence_event);
-    m_queue_compute->WaitFrame(index, m_fence_event);
-    m_queue_copy->WaitFrame(index, m_fence_event);
+    m_queue->m_tasks[m_state._frame_index]->Wait();
 }
 
 void Rendering::MoveToNextFrame()
@@ -414,36 +391,9 @@ void Rendering::MoveToNextFrame()
     if (m_state._frame_index >= FrameCount) m_state._frame_index = 0;
 }
 
-void Rendering::ResetCommandAllocator() const
+const Rc<GpuTask>& Rendering::CurrentTask() const
 {
-    ResetCommandAllocator(m_state._frame_index);
-}
-
-void Rendering::ResetCommandAllocator(const UINT32 index) const
-{
-    m_queue->ReSet(index);
-    m_queue_compute->ReSet(index);
-    m_queue_copy->ReSet(index);
-}
-
-void Rendering::ResetAllCommandAllocator() const
-{
-    for (auto i = 0; i < FrameCount; ++i)
-    {
-        ResetCommandAllocator(i);
-    }
-}
-
-void Rendering::AfterSubmit() const
-{
-    AfterSubmit(m_state._frame_index);
-}
-
-void Rendering::AfterSubmit(const UINT32 index) const
-{
-    m_queue->SignalFrame(index);
-    m_queue_compute->SignalFrame(index);
-    m_queue_copy->SignalFrame(index);
+    return m_queue->GetTask(m_state._frame_index);
 }
 
 FError Rendering::ReadyFrame() noexcept
@@ -456,8 +406,7 @@ FError Rendering::ReadyFrame() noexcept
             );
             if (wait_all)
             {
-                WaitAll();
-                ResetAllCommandAllocator();
+                WaitAllFrame();
 
                 for (const auto& context : m_contexts | std::views::values)
                 {
@@ -473,21 +422,19 @@ FError Rendering::ReadyFrame() noexcept
                 WaitCurrentFrame();
             }
 
-            ResetCommandAllocator();
-            check_error << m_current_command_list->Reset(
-                m_queue->m_command_allocators[m_state._frame_index].get(), nullptr
-            );
+            const auto& task = CurrentTask();
+            const auto command_list = task->GetList();
 
             {
                 const auto descriptor_heaps = m_descriptors->CurrentHeaps(m_state._frame_index);
-                m_current_command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
-                m_current_command_list->SetGraphicsRootSignature(m_bind_less_root_signature.get());
-                m_current_command_list->SetComputeRootSignature(m_bind_less_root_signature.get());
+                command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
+                command_list->SetGraphicsRootSignature(m_bind_less_root_signature.get());
+                command_list->SetComputeRootSignature(m_bind_less_root_signature.get());
             }
 
             for (const auto& context : m_contexts | std::views::values)
             {
-                context->ReadyFrame(m_current_command_list.get());
+                context->ReadyFrame(command_list);
             }
 
             m_state._on_recording = true;
@@ -502,22 +449,20 @@ FError Rendering::EndFrame() noexcept
         {
             m_state._on_recording = false;
 
+            const auto& task = CurrentTask();
+            const auto command_list = task->GetList();
+
             for (const auto& context : m_contexts | std::views::values)
             {
-                context->EndFrame(m_current_command_list.get());
+                context->EndFrame(command_list);
             }
 
-            check_error << m_current_command_list->Close();
-
-            ID3D12CommandList* command_lists[] = {m_current_command_list.get()};
-            m_queue->m_queue->ExecuteCommandLists(1, command_lists);
+            task->Submit();
 
             for (const auto& context : m_contexts | std::views::values)
             {
                 context->Present();
             }
-
-            AfterSubmit();
         }
     );
 }
@@ -530,7 +475,8 @@ FError Rendering::GetDevice(void** out) noexcept
 
 FError Rendering::CurrentCommandList(void** out) noexcept
 {
-    *out = m_current_command_list.get();
+    const auto& task = CurrentTask();
+    *out = task->GetList();
     return FError::None();
 }
 
@@ -540,8 +486,9 @@ FError Rendering::ClearSurface(FGraphicSurface* ctx, float4 color) noexcept
     return ferr_back(
         [&]
         {
+            const auto& task = CurrentTask();
             const auto* context = static_cast<GraphicSurface*>(ctx); // NOLINT(*-pro-type-static-cast-downcast)
-            m_current_command_list->ClearRenderTargetView(
+            task->GetList()->ClearRenderTargetView(
                 context->m_current_cpu_handle, reinterpret_cast<FLOAT*>(&color), 0, nullptr
             );
         }
@@ -560,14 +507,15 @@ FError Rendering::CurrentFrameRtv(FGraphicSurface* ctx, void** out) noexcept
     );
 }
 
-Queue::Queue(
-    Rendering* rendering, const D3D12_COMMAND_LIST_TYPE type, const D3D12_COMMAND_QUEUE_PRIORITY priority, LPCWSTR name
-) : m_rendering(rendering)
+AGpuQueue::AGpuQueue(
+    Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority,
+    std::optional<std::wstring>&& name
+) : m_rendering(rendering), m_type(type), m_name(std::move(name))
 {
-    auto* device = rendering->m_device.get();
-
     // 创建队列
     {
+        auto* device = rendering->m_device.get();
+
         D3D12_COMMAND_QUEUE_DESC queue_desc = {
             .Type = type,
             .Priority = priority,
@@ -575,70 +523,173 @@ Queue::Queue(
         };
         check_error << device->CreateCommandQueue(&queue_desc, RT_IID_PPV_ARGS(m_queue));
 
-        if (args().debug)
+        if (args().debug && m_name.has_value())
         {
-            const auto item_name = fmt::format(L"{} Queue", name);
+            const auto item_name = fmt::format(L"{} Queue", m_name.value().c_str());
             check_error << m_queue->SetName(item_name.c_str());
         }
     }
+}
 
-    // 创建栅栏
+GpuGraphicQueue::GpuGraphicQueue(
+    Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority,
+    std::optional<std::wstring>&& name
+) : AGpuQueue(rendering, type, priority, std::move(name))
+{
+    for (auto i = 0; i < FrameCount; ++i)
     {
-        check_error << device->CreateFence(m_fence_value, D3D12_FENCE_FLAG_NONE, RT_IID_PPV_ARGS(m_fence));
-        if (args().debug)
+        std::optional<std::wstring> task_name{std::nullopt};
+        if (m_name.has_value())
         {
-            const auto item_name = fmt::format(L"{} Fence", name);
-            check_error << m_fence->SetName(item_name.c_str());
+            task_name = fmt::format(L"{} Task {}", m_name.value().c_str(), i);
         }
-    }
-
-    // 创建命令分配器
-    {
-        for (auto& m_command_allocator : m_command_allocators)
-        {
-            check_error << device->CreateCommandAllocator(
-                D3D12_COMMAND_LIST_TYPE_DIRECT, RT_IID_PPV_ARGS(m_command_allocator)
-            );
-        }
-
-        if (args().debug)
-        {
-            for (size_t i = 0; i < FrameCount; ++i)
-            {
-                const auto item_name = fmt::format(L"{} Command Allocator {}", name, i);
-                check_error << m_command_allocators[i]->SetName(item_name.c_str());
-            }
-        }
+        m_tasks[i] = new GpuTask(this, std::move(task_name));
     }
 }
 
-void Queue::Wait(const UINT64 fence_value, HANDLE event) const
+const Rc<GpuTask>& GpuGraphicQueue::GetTask(const u32 frame) const noexcept
 {
-    if (m_fence->GetCompletedValue() < fence_value)
+    return m_tasks[frame];
+}
+
+GpuBackgroundQueue::GpuBackgroundQueue(
+    Rendering* rendering, D3D12_COMMAND_LIST_TYPE type, D3D12_COMMAND_QUEUE_PRIORITY priority,
+    std::optional<std::wstring>&& name
+) : AGpuQueue(rendering, type, priority, std::move(name))
+{
+}
+
+Rent<Rc<GpuTask>> GpuBackgroundQueue::RentTask()
+{
+    Rc<GpuTask> task;
+    if (!m_task_pool.try_dequeue(task))
     {
-        check_error << m_fence->SetEventOnCompletion(fence_value, event);
-        WaitForSingleObjectEx(event, INFINITE, false);
+        std::optional<std::wstring> name{std::nullopt};
+        if (m_name.has_value())
+        {
+            name = fmt::format(L"{} Task {}", m_name.value().c_str(), ++m_task_id);
+        }
+        task = new GpuTask(this, std::move(name));
+    }
+    return Rent<Rc<GpuTask>>(this->CloneThis(), std::move(task));
+}
+
+void GpuBackgroundQueue::ReturnTask(Rc<GpuTask>&& task)
+{
+    task->Wait();
+    m_task_pool.enqueue(std::move(task));
+}
+
+void GpuBackgroundQueue::UnsafeReturnTask(Rent<Rc<GpuTask>>&& task)
+{
+    m_task_pool.enqueue(std::move(task.m_task));
+}
+
+GpuFence::~GpuFence()
+{
+    err_back(
+        [&]
+        {
+            if (CloseHandle(m_fence_event) == 0) winrt::throw_last_error();
+        }
+    );
+}
+
+GpuFence::GpuFence(ID3D12Device& device)
+{
+    check_error << device.CreateFence(m_fence_value, D3D12_FENCE_FLAG_NONE, RT_IID_PPV_ARGS(m_fence));
+
+    m_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (m_fence_event == nullptr) winrt::throw_last_error();
+}
+
+void GpuFence::SetName(LPCWSTR name) const
+{
+    if (name == nullptr || m_fence == nullptr) return;
+    check_error << m_fence->SetName(name);
+}
+
+void GpuFence::Wait() const
+{
+    if (const auto fence_value = m_fence_value; m_fence->GetCompletedValue() < fence_value)
+    {
+        check_error << m_fence->SetEventOnCompletion(fence_value, m_fence_event);
+        WaitForSingleObjectEx(m_fence_event, INFINITE, false);
     }
 }
 
-void Queue::WaitAll(HANDLE event) const
+void GpuFence::Signal(ID3D12CommandQueue& queue)
 {
-    Wait(m_fence_value, event);
+    const auto value = ++m_fence_value;
+    check_error << queue.Signal(m_fence.get(), value);
 }
 
-void Queue::WaitFrame(const UINT32 index, HANDLE event) const
+GpuTask::~GpuTask()
 {
-    Wait(m_frame_current_fence_value[index], event);
+    Wait();
 }
 
-void Queue::SignalFrame(const UINT32 index)
+void GpuTask::do_reset() const
 {
-    check_error << m_queue->Signal(m_fence.get(), m_frame_current_fence_value[index] = ++m_fence_value);
+    check_error << m_command_allocators->Reset();
+    check_error << m_command_list->Reset(m_command_allocators.get(), nullptr);
 }
 
-void Queue::ReSet(const UINT32 index)
+GpuTask::GpuTask(AGpuQueue* queue, std::optional<std::wstring>&& name) : m_queue(queue), m_name(std::move(name))
 {
-    check_error << m_command_allocators[index]->Reset();
+    const auto device = m_queue->m_rendering->m_device.get();
+    m_fence = new GpuFence(*device);
+
+    check_error << device->CreateCommandAllocator(
+        m_queue->m_type, RT_IID_PPV_ARGS(m_command_allocators)
+    );
+
+    check_error << m_queue->m_rendering->m_device->CreateCommandList(
+        0, m_queue->m_type, m_command_allocators.get(), nullptr, RT_IID_PPV_ARGS(m_command_list)
+    );
+    check_error << m_command_list->Close();
+
+    if (m_name.has_value())
+    {
+        {
+            const auto item_name = fmt::format(L"{} Fence", m_name.value().c_str());
+            m_fence->SetName(item_name.c_str());
+        }
+        {
+            const auto item_name = fmt::format(L"{} Command Allocator", m_name.value().c_str());
+            check_error << m_command_allocators->SetName(item_name.c_str());
+        }
+    }
+
+    do_reset();
+}
+
+ID3D12GraphicsCommandList7* GpuTask::GetList() const
+{
+    if (m_state != State::Idle) throw CcError("Cant get command list");
+    return m_command_list.get();
+}
+
+void GpuTask::Submit()
+{
+    if (m_state != State::Idle) return;
+
+    check_error << m_command_list->Close();
+    ID3D12CommandList* list[] = {m_command_list.get()};
+    m_queue->m_queue->ExecuteCommandLists(1, list);
+
+    m_state = State::Submitted;
+}
+
+void GpuTask::Wait()
+{
+    if (m_state == State::Idle) Submit();
+
+    m_fence->Signal(*m_queue->m_queue);
+    m_fence->Wait();
+    do_reset();
+
+    m_state = State::Idle;
 }
 
 void GraphicSurface::re_create_rts()
