@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <directxtk12/DirectXHelpers.h>
 #include <directx/d3dx12_pipeline_state_stream.h>
+#include <WinPixEventRuntime/pix3.h>
 
 #include "../utils/error.h"
 #include "./gpu_convert.h"
@@ -401,6 +402,11 @@ FError Rendering::ReadyFrame() noexcept
     return ferr_back(
         [&]
         {
+            if (args().debug)
+            {
+                PIXBeginEvent(m_queue->m_queue.get(), PIX_COLOR_DEFAULT, L"Frame");
+            }
+
             const auto wait_all = std::ranges::any_of(
                 m_contexts | std::views::values, [](const auto& context) { return context->m_resized; }
             );
@@ -462,6 +468,11 @@ FError Rendering::EndFrame() noexcept
             for (const auto& context : m_contexts | std::views::values)
             {
                 context->Present();
+            }
+
+            if (args().debug)
+            {
+                PIXEndEvent(m_queue->m_queue.get());
             }
         }
     );

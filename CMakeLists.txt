@@ -22,10 +22,15 @@ FetchContent_Declare(
         shader-re-tool
         URL https://github.com/2A5F/Coplt.ShaderReflections/releases/download/0.1.0/Coplt.ShaderReflections.Dxc.7z
 )
+FetchContent_Declare(
+        win-pix-event-runtime
+        URL https://www.nuget.org/api/v2/package/WinPixEventRuntime/1.0.240308001
+)
 
 FetchContent_MakeAvailable(deno)
 FetchContent_MakeAvailable(dotnet-host)
 FetchContent_MakeAvailable(shader-re-tool)
+FetchContent_MakeAvailable(win-pix-event-runtime)
 
 set(SPDLOG_FMT_EXTERNAL ON)
 set(SDL_SHARED OFF)
@@ -58,6 +63,7 @@ add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE)
 add_definitions(-DGLM_FORCE_UNRESTRICTED_GENTYPE)
 add_definitions(-DGLM_FORCE_QUAT_DATA_XYZW)
 add_definitions(-DCO_SRC)
+add_definitions(-DUSE_PIX)
 
 add_definitions(-march=skylake)
 
@@ -134,6 +140,8 @@ target_link_directories(${PROJECT_NAME} PRIVATE ${PACKAGE_PREFIX_DIR}/lib)
 target_include_directories(${PROJECT_NAME} PRIVATE third_party/D3D12MemoryAllocator/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native)
 target_link_directories(${PROJECT_NAME} PRIVATE ${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native)
+target_include_directories(${PROJECT_NAME} PRIVATE ${win-pix-event-runtime_SOURCE_DIR}/Include)
+target_link_directories(${PROJECT_NAME} PRIVATE ${win-pix-event-runtime_SOURCE_DIR}/bin/x64)
 target_include_directories(${PROJECT_NAME} PRIVATE third_party/parallel-hashmap)
 target_link_libraries(${PROJECT_NAME} PRIVATE mimalloc)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
@@ -151,6 +159,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::concurrentqueue::concu
 
 target_link_libraries(${PROJECT_NAME} PRIVATE nethost.lib)
 configure_file(${dotnet-host_SOURCE_DIR}/runtimes/win-x64/native/nethost.dll ${CMAKE_BINARY_DIR}/bin/nethost.dll COPYONLY)
+target_link_libraries(${PROJECT_NAME} PRIVATE WinPixEventRuntime.lib)
+configure_file(${win-pix-event-runtime_SOURCE_DIR}/bin/x64/WinPixEventRuntime.dll ${CMAKE_BINARY_DIR}/bin/WinPixEventRuntime.dll COPYONLY)
 
 if (TARGET Microsoft::DirectX12-Agility)
     file(MAKE_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/D3D12")
