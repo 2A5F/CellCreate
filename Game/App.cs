@@ -1,4 +1,5 @@
-﻿using Game.Native;
+﻿using Game.Core;
+using Game.Native;
 using Game.Rendering;
 using Game.Utilities;
 using Game.Windowing;
@@ -18,10 +19,13 @@ public static partial class App
     public static Window Window { get; private set; } = null!;
     public static RenderingManager Rendering { get; private set; } = null!;
 
+    public static Isolate Isolate { get; private set; } = null!;
+
     internal static unsafe int Main()
     {
         s_native_app->Init();
         Rendering = new();
+        Isolate = new();
         MessageLoop.InitMessageLoop();
         MainLoop();
         MessageLoop.Loop();
@@ -36,11 +40,15 @@ public static partial class App
         Window.MarkMain();
         Rendering.MakeContext(Window);
         await TaskUtils.SwitchToLongRunning();
+        
+        Isolate.InitModules();
 
         var shader_ui_rect = Shaders.TryGetShader("ui/ui")!["rect"];
 
-        while (Vars.running)
+        while (Vars.running && !Window.Closed)
         {
+            Isolate.Tick();
+            
             Rendering.Graph.BeginRecording(Window.Surface!);
 
             Draw(shader_ui_rect);

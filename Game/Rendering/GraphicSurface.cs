@@ -13,6 +13,8 @@ public sealed unsafe partial class GraphicSurface
     internal FGraphicSurface* m_ptr;
     internal FGraphicSurfaceData* m_data;
 
+    public bool Closed { get; private set; }
+
     internal GraphicSurface(FGraphicSurface* ptr, RenderingManager rendering_manager, WindowHandle window_handle)
     {
         m_ptr = ptr;
@@ -31,6 +33,11 @@ public sealed unsafe partial class GraphicSurface
         RenderingManager.RenderingContexts.Remove(WindowHandle, out _);
         ptr->Destroy().TryThrow();
         ptr->Release();
+    }
+
+    internal void OnClose()
+    {
+        Closed = true;
     }
 
     internal CpuDescriptorHandle CurrentFrameRtv => new((UIntPtr)m_data->current_frame_rtv);

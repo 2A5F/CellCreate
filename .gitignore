@@ -21,4 +21,4 @@ build/
 .vs/
 StructLayoutSettings.json
 
-CC.sln.DotSettings.user
+*.DotSettings.user

@@ -15,10 +15,13 @@ public sealed class Window
     public GraphicSurface? Surface { get; internal set; }
 
     public event Action<uint2>? OnResize;
+    
+    public bool Closed { get; private set; }
 
     internal void Destroy()
     {
-        Surface?.Destroy();
+        Closed = true;
+        Surface?.OnClose();
         Handle.Dispose();
         m_handle = null;
     }
